@@ -1,17 +1,19 @@
 # inspector
 
+[![Clojars Project](https://img.shields.io/clojars/v/org.clojars.akshay/inspector.svg?include_prereleases)](https://clojars.org/org.clojars.akshay/inspector)
+
 See what your functions are doing.
 
 ## Install
-```
-$ git clone <...repo...> inspector
-$ cd inpector
-$ lein install
+### Leiningen/Boot
+```clojure
+[org.clojars.akshay/inspector "0.4.0-SNAPSHOT"]
 ```
 
-## Add to project.clj
-
-`[inspector "0.3.0"]`
+### Clojure CLI/deps.edn
+```clojure
+org.clojars.akshay/inspector {:mvn/version "0.4.0-SNAPSHOT"}
+```
 
 ## Basic Usage
 
