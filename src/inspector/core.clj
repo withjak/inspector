@@ -4,16 +4,18 @@
   "Executes action if condition evaluates to truthy value."
   [rules meta-data fn-args shared]
   (let [evaluate (fn [shared [condition action]]
-                   (when (condition meta-data fn-args shared)
-                     (action meta-data fn-args shared)))]
+                   (if (condition meta-data fn-args shared)
+                     (action meta-data fn-args shared)
+                     shared))]
     (reduce evaluate shared (partition 2 rules))))
 
 (defn run-after-rules
   "Executes action if condition evaluates to truthy value."
   [rules meta-data fn-args shared return-value]
   (let [evaluate (fn [shared [condition action]]
-                   (when (condition meta-data fn-args shared return-value)
-                     (action meta-data fn-args shared return-value)))]
+                   (if (condition meta-data fn-args shared return-value)
+                     (action meta-data fn-args shared return-value)
+                     shared))]
     (reduce evaluate shared (partition 2 rules))))
 
 (defn create-template
