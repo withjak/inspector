@@ -10,9 +10,9 @@
   []
   (.threadId (Thread/currentThread)))
 
-; Dynamic because we need to each thread to see only its self
-; Atom because thread will be modifying its local state
-(def ^:dynamic *state* {:parent-thread-id (get-thread-id) :level -1})
+; Dynamic because we need each thread to see only it's self
+(def ^:dynamic *state* {:caller-thread-id (get-thread-id) :caller-id 0})
+(def id (atom 0))
 
 (defn run-before-rules
   "Executes action if condition evaluates to truthy value."
@@ -42,15 +42,18 @@
     (fn modified-fn
       [& args]
       (if *modify-fns*
-        (let [parent-thread-id (:parent-thread-id *state*)
-              t-id (get-thread-id)]
+        (let [caller-thread-id (:caller-thread-id *state*)
+              t-id (get-thread-id)
+              c-id (:caller-id *state*)
+              my-id (swap! id inc)]
 
           (binding [*state* (-> *state*
-                                (update :level inc)
-                                (assoc :parent-thread-id t-id))]
-            (let [shared-state {:parent-thread-id parent-thread-id
+                                (assoc :caller-id my-id) ;; for fns that "f" calls f's id will be their c-id
+                                (assoc :caller-thread-id t-id))]
+            (let [shared-state {:caller-thread-id caller-thread-id
                                 :t-id             t-id
-                                :level            (:level *state*)}
+                                :id               my-id
+                                :c-id              c-id}      ;; for "f" its c-id it the id of its caller
                   shared (run-before-rules before-rules (meta var) args shared-state)
 
                   return-value (apply original-fn args)]
