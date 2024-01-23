@@ -4,8 +4,8 @@
   "Returns a depth-first traversal of the tree. Where :start and :end represents
   the start or end of a node's exploration.
 
-  adjacency-list: map => { parent-node  [child child ...], ... }
-  root: root node
+  adjacency-list: map => { parent-node  [child child ...], ... }.
+  node: this node will be explored using depth first search.
 
   (flatten-tree
       {1 [2 3]
@@ -25,13 +25,13 @@
       [1 :end 0]]
 
   [node start/end depth]
-  node: unique index of each node
+  node: unique index of each node.
   start/end:
     [[node1 :start] ... [node1 :end]]
     everything in between are children of node1
   level: level of node in the tree
   "
-  [adjacency-list root]
+  [adjacency-list node]
   (letfn [(flatten-tree
             [node level]
             (let [children (get adjacency-list node)]
@@ -39,7 +39,7 @@
                 [node :start level]
                 (mapcat #(flatten-tree % (inc level)) children)
                 [node :end level])))]
-    (partition 3 (flatten-tree root 0))))
+    (partition 3 (flatten-tree node 0))))
 
 (defn find-path
   "Returns path which is a list of nodes from root node to target node.
