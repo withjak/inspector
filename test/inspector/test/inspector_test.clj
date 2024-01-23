@@ -1,4 +1,4 @@
-(ns inspector.test.new-printer-test
+(ns inspector.test.inspector-test
   (:require [clojure.test :refer :all]
             [clojure.string :as str]
             [clojure.java.io :as io]
@@ -22,13 +22,13 @@
 
 (def parallel-call-hierarchy-output-1
   "Time: Tue Jan 23 16:28:30 IST 2024
-Г-- inspector.test.new-printer-test/parallel (1)
-|  Г-- inspector.test.new-printer-test/simple (0)
-|  |  Г-- inspector.test.new-printer-test/simplest (0)
+Г-- inspector.test.inspector-test/parallel (1)
+|  Г-- inspector.test.inspector-test/simple (0)
+|  |  Г-- inspector.test.inspector-test/simplest (0)
 |  |  L-- 0
 |  L-- 0
-|  Г-- inspector.test.new-printer-test/simple (1)
-|  |  Г-- inspector.test.new-printer-test/simplest (1)
+|  Г-- inspector.test.inspector-test/simple (1)
+|  |  Г-- inspector.test.inspector-test/simplest (1)
 |  |  L-- 1
 |  L-- 1
 L-- [0 1]
@@ -36,13 +36,13 @@ L-- [0 1]
 
 (def parallel-call-hierarchy-output-2
   "Time: Tue Jan 23 16:28:30 IST 2024
-Г-- inspector.test.new-printer-test/parallel (1)
-|  Г-- inspector.test.new-printer-test/simple (1)
-|  |  Г-- inspector.test.new-printer-test/simplest (1)
+Г-- inspector.test.inspector-test/parallel (1)
+|  Г-- inspector.test.inspector-test/simple (1)
+|  |  Г-- inspector.test.inspector-test/simplest (1)
 |  |  L-- 1
 |  L-- 1
-|  Г-- inspector.test.new-printer-test/simple (0)
-|  |  Г-- inspector.test.new-printer-test/simplest (0)
+|  Г-- inspector.test.inspector-test/simple (0)
+|  |  Г-- inspector.test.inspector-test/simplest (0)
 |  |  L-- 0
 |  L-- 0
 L-- [0 1]
@@ -71,13 +71,13 @@ L-- [0 1]
 (def parallel-tracked-vars-output-1|simple
   "Time: Tue Jan 23 17:15:51 IST 2024
 ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢\u0020
-call-chain: [\"inspector.test.new-printer-test/parallel\" \"inspector.test.new-printer-test/simple\"]
-name: inspector.test.new-printer-test/simple
+call-chain: [\"inspector.test.inspector-test/parallel\" \"inspector.test.inspector-test/simple\"]
+name: inspector.test.inspector-test/simple
 args: (0)
 rv: 0
 ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢\u0020
-call-chain: [\"inspector.test.new-printer-test/parallel\" \"inspector.test.new-printer-test/simple\"]
-name: inspector.test.new-printer-test/simple
+call-chain: [\"inspector.test.inspector-test/parallel\" \"inspector.test.inspector-test/simple\"]
+name: inspector.test.inspector-test/simple
 args: (1)
 rv: 1
 ")
@@ -85,13 +85,13 @@ rv: 1
 (def parallel-tracked-vars-output-2|simple
   "Time: Tue Jan 23 17:15:51 IST 2024
 ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢\u0020
-call-chain: [\"inspector.test.new-printer-test/parallel\" \"inspector.test.new-printer-test/simple\"]
-name: inspector.test.new-printer-test/simple
+call-chain: [\"inspector.test.inspector-test/parallel\" \"inspector.test.inspector-test/simple\"]
+name: inspector.test.inspector-test/simple
 args: (1)
 rv: 1
 ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢\u0020
-call-chain: [\"inspector.test.new-printer-test/parallel\" \"inspector.test.new-printer-test/simple\"]
-name: inspector.test.new-printer-test/simple
+call-chain: [\"inspector.test.inspector-test/parallel\" \"inspector.test.inspector-test/simple\"]
+name: inspector.test.inspector-test/simple
 args: (0)
 rv: 0
 ")
@@ -119,13 +119,13 @@ rv: 0
 (def parallel-tracked-vars-output-1|simplest
   "Time: Tue Jan 23 17:32:22 IST 2024
 ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢\u0020
-call-chain: [\"inspector.test.new-printer-test/parallel\" \"inspector.test.new-printer-test/simple\" \"inspector.test.new-printer-test/simplest\"]
-name: inspector.test.new-printer-test/simplest
+call-chain: [\"inspector.test.inspector-test/parallel\" \"inspector.test.inspector-test/simple\" \"inspector.test.inspector-test/simplest\"]
+name: inspector.test.inspector-test/simplest
 args: (1)
 rv: 1
 ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢\u0020
-call-chain: [\"inspector.test.new-printer-test/parallel\" \"inspector.test.new-printer-test/simple\" \"inspector.test.new-printer-test/simplest\"]
-name: inspector.test.new-printer-test/simplest
+call-chain: [\"inspector.test.inspector-test/parallel\" \"inspector.test.inspector-test/simple\" \"inspector.test.inspector-test/simplest\"]
+name: inspector.test.inspector-test/simplest
 args: (0)
 rv: 0
 ")
@@ -133,13 +133,13 @@ rv: 0
 (def parallel-tracked-vars-output-2|simplest
   "Time: Tue Jan 23 17:32:22 IST 2024
 ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢\u0020
-call-chain: [\"inspector.test.new-printer-test/parallel\" \"inspector.test.new-printer-test/simple\" \"inspector.test.new-printer-test/simplest\"]
-name: inspector.test.new-printer-test/simplest
+call-chain: [\"inspector.test.inspector-test/parallel\" \"inspector.test.inspector-test/simple\" \"inspector.test.inspector-test/simplest\"]
+name: inspector.test.inspector-test/simplest
 args: (0)
 rv: 0
 ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢\u0020
-call-chain: [\"inspector.test.new-printer-test/parallel\" \"inspector.test.new-printer-test/simple\" \"inspector.test.new-printer-test/simplest\"]
-name: inspector.test.new-printer-test/simplest
+call-chain: [\"inspector.test.inspector-test/parallel\" \"inspector.test.inspector-test/simple\" \"inspector.test.inspector-test/simplest\"]
+name: inspector.test.inspector-test/simplest
 args: (1)
 rv: 1
 ")
