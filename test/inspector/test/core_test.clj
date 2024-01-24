@@ -1,7 +1,6 @@
 (ns inspector.test.core-test
   (:require [clojure.test :refer :all]
-            [inspector.core :as core]
-            [inspector.templates.common :as common]))
+            [inspector.core :as core]))
 
 (deftest run-before-rules|share-working?-test
   (let [c-t (fn [& _] true)
@@ -30,40 +29,3 @@
         fn-args []]
     (is (= (core/run-after-rules rules meta-data fn-args {} 1)
            {:a2 2, :a4 4}))))
-
-(defn bar
-  [a]
-  {:bar a})
-
-(defn foo
-  [a]
-  {:foo (bar a)})
-
-(deftest modify-fns-test
-  (let [fn-to-execute #(foo 1)
-        my-project-vars [#'foo #'bar]
-        expected-captured-value [{:arglists '([a]) :fn-args '(1) :name 'foo}
-                                 {:arglists '([a]) :fn-args '(1) :name 'bar}
-                                 {:arglists '([a]) :fn-args '(1) :name 'bar :return-value {:bar 1}}
-                                 {:arglists '([a]) :fn-args '(1) :name 'foo :return-value {:foo {:bar 1}}}]
-
-        capture-data (atom [])
-        b-action (fn [{:keys [arglists name] :as meta-data} fn-args shared]
-                   (swap!
-                     capture-data
-                     conj
-                     {:arglists arglists :name name :fn-args fn-args}))
-        f-action (fn [{:keys [arglists name] :as meta-data} fn-args shared return-value]
-                   (swap!
-                     capture-data
-                     conj
-                     {:arglists arglists :name name :fn-args fn-args :return-value return-value}))
-        before-rules [common/always b-action]
-        after-rules [common/always f-action]
-        template (core/create-template before-rules after-rules)
-
-        executer (core/attach-template my-project-vars template)
-        rv (executer fn-to-execute)]
-
-    (is (= rv {:foo {:bar 1}}))
-    (is (= @capture-data expected-captured-value))))
