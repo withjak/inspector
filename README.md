@@ -7,12 +7,12 @@ See what your functions are doing.
 ## Install
 ### Leiningen/Boot
 ```clojure
-[org.clojars.akshay/inspector "0.5.0-SNAPSHOT"]
+[org.clojars.akshay/inspector "1.0.0-SNAPSHOT"]
 ```
 
 ### Clojure CLI/deps.edn
 ```clojure
-org.clojars.akshay/inspector {:mvn/version "0.5.0-SNAPSHOT"}
+org.clojars.akshay/inspector {:mvn/version "1.0.0-SNAPSHOT"}
 ```
 
 ## Basic Usage
