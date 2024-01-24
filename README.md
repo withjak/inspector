@@ -123,7 +123,8 @@ From `inspector.test.capture-test`
  {:fn-name inspector.test.capture-test/parallel, :fn-args (1), :id 1, :c-id 0, :t-id 34, :caller-thread-id 34, :fn-rv [0 1]}]
 
 ; :fn-name -> is the namespace qualified name of the function that was called
-; :fn-args -> are the list of arguments as recieved by the particular function
+; :fn-args -> are the list of arguments as received by the particular function
+; :fn-rv -> return value
 ; :id -> a unique identifier for each function call.
 ;        if a function is called twice with exact same arguments the both calls will have different id's assigned to them.
 ; :c-id -> is the id of the caller function. c-id = 0 is always reserved for the very first caller.
