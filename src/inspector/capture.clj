@@ -20,10 +20,10 @@
 
 (defn a-action
   [meta-data fn-args shared return-value]
-  (swap!
-    accumulator
-    conj
-    (assoc (prepare-fn-record meta-data fn-args shared) :fn-rv return-value))
+  (let [record (-> (prepare-fn-record meta-data fn-args shared)
+                   (assoc :fn-rv return-value
+                          :execution-time (:execution-time shared)))]
+    (swap! accumulator conj record))
   shared)
 
 (def capture-template

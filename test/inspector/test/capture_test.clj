@@ -13,35 +13,37 @@
         {:keys [rv fn-call-records]} (capture/run my-project-vars #(parallel 1))
         groups (group-by :fn-name fn-call-records)
         rv-records (filter #(contains? % :fn-rv) fn-call-records)
+        execution-time (map :execution-time rv-records)
         id-s (map :id fn-call-records)
         c-id-s (map :c-id fn-call-records)
         c-t-id-s (map :caller-thread-id fn-call-records)
         t-id-s (map :t-id fn-call-records)]
 
-    (testing "testing correct args, rv and function calls")
-    (is (= (->> rv-records
-                (map #(select-keys % [:fn-name :fn-args :fn-rv]))
-                set)
-           #{{:fn-args '(1)
-              :fn-name "inspector.test.capture-test/simplest"
-              :fn-rv   1}
-             {:fn-args '(1)
-              :fn-name "inspector.test.capture-test/simple"
-              :fn-rv   1}
-             {:fn-args '(0)
-              :fn-name "inspector.test.capture-test/simplest"
-              :fn-rv   0}
-             {:fn-args '(0)
-              :fn-name "inspector.test.capture-test/simple"
-              :fn-rv   0}
-             {:fn-args '(1)
-              :fn-name "inspector.test.capture-test/parallel"
-              :fn-rv   [0 1]}}))
+    (testing "testing correct args, rv and function calls"
+      (is (= (->> rv-records
+                  (map #(select-keys % [:fn-name :fn-args :fn-rv]))
+                  set)
+             #{{:fn-args '(1)
+                :fn-name "inspector.test.capture-test/simplest"
+                :fn-rv   1}
+               {:fn-args '(1)
+                :fn-name "inspector.test.capture-test/simple"
+                :fn-rv   1}
+               {:fn-args '(0)
+                :fn-name "inspector.test.capture-test/simplest"
+                :fn-rv   0}
+               {:fn-args '(0)
+                :fn-name "inspector.test.capture-test/simple"
+                :fn-rv   0}
+               {:fn-args '(1)
+                :fn-name "inspector.test.capture-test/parallel"
+                :fn-rv   [0 1]}})))
 
     (is (every? int? id-s))
     (is (every? int? c-id-s))
     (is (every? int? c-t-id-s))
     (is (every? int? t-id-s))
+    (is (every? int? execution-time))
 
     (testing "total records captured"
       (is (= (count fn-call-records) 10))

@@ -1,19 +1,5 @@
 (ns inspector.core)
 
-; with-redef changes the root binding of vars
-; so if a thread calls a fn f,
-; then we will execute modified f only if that caller thread explicitly tells us to do so
-; by binding *modify-fns* to true
-; else we will execute the original f
-(def ^:dynamic *modify-fns* false)
-(defn get-thread-id
-  []
-  (.threadId (Thread/currentThread)))
-
-; Dynamic because we need each thread to see only it's self
-(def ^:dynamic *state* {:caller-thread-id (get-thread-id) :caller-id 0})
-(def id (atom 0))
-
 (defn run-before-rules
   "Executes action if condition evaluates to truthy value."
   [rules meta-data fn-args shared]
@@ -32,34 +18,59 @@
                      shared))]
     (reduce evaluate shared (partition 2 rules))))
 
+(defn get-thread-id
+  []
+  (let [t (Thread/currentThread)]
+    (try (.threadId t)
+      (catch Exception e (.getId t)))))
+
+(def ^:dynamic *modify-fns* false)
+; Dynamic because we need each thread to see only it's self
+(def ^:dynamic *state* {:caller-thread-id (get-thread-id) :caller-id 0})
+(def id (atom 0))
+
+(defn nano-time
+  []
+  (. System (nanoTime)))
+
 (defn create-template
   "Attaches rules (i.e. condition action pairs) before and after execution of a function."
   [before-rules after-rules]
 
   (fn template
-    [var original-fn]
+    [fn-var]
+    ; value is the original function
+    (let [fn-value (deref fn-var)
+          meta-data (meta fn-var)]
 
-    (fn modified-fn
-      [& args]
-      (if *modify-fns*
-        (let [caller-thread-id (:caller-thread-id *state*)
-              t-id (get-thread-id)
-              c-id (:caller-id *state*)
-              my-id (swap! id inc)]
+      (fn modified-value
+        [& args]
+        (if *modify-fns*
+          (let [{:keys [id t-id] :as shared-state} {:caller-thread-id (:caller-thread-id *state*)
+                                                    :t-id             (get-thread-id)
+                                                    :id               (swap! id inc)
+                                                    ;; for "f" its c-id is the id of its caller
+                                                    :c-id             (:caller-id *state*)}]
+            (binding [*state* (-> *state*
+                                  (assoc :caller-id id) ;; for fns that "f" calls f's id will be their c-id
+                                  (assoc :caller-thread-id t-id))]
+              (let [shared (run-before-rules before-rules meta-data args shared-state)
+                    start-time (nano-time)
+                    return-value (apply fn-value args)
+                    shared (assoc shared :execution-time (- (nano-time) start-time))]
+                (run-after-rules after-rules meta-data args shared return-value)
+                return-value)))
+          (apply fn-value args))))))
 
-          (binding [*state* (-> *state*
-                                (assoc :caller-id my-id) ;; for fns that "f" calls f's id will be their c-id
-                                (assoc :caller-thread-id t-id))]
-            (let [shared-state {:caller-thread-id caller-thread-id
-                                :t-id             t-id
-                                :id               my-id
-                                :c-id              c-id}      ;; for "f" its c-id it the id of its caller
-                  shared (run-before-rules before-rules (meta var) args shared-state)
-
-                  return-value (apply original-fn args)]
-              (run-after-rules after-rules (meta var) args shared return-value)
-              return-value)))
-        (apply original-fn args)))))
+(defn attach-template
+  [fn-vars template]
+  (fn executor
+    [f]
+    (with-redefs-fn
+      ;; modify all given functions
+      (zipmap fn-vars (map template fn-vars))
+      ;; run fn f in this modified environment
+      #(f))))
 
 (comment
   ;; TODO
@@ -71,19 +82,12 @@
   ;                   (catch Exception e
   ;                     (run-after-rules after-rules (meta var) args shared {:error (.getMessage e)})
   ;                     (throw e)))]
-  )
 
-(defn attach-template
-  [fn-vars template]
-  (fn executor
-    [f]
-    (with-redefs-fn
-      ;; modify all given functions
-      (zipmap
-        fn-vars
-        (map #(template % (deref %)) fn-vars))
-      ;; run fn f in this modified environment
-      #(f))))
+  ; TODO: In case an un caught exception occurs, the stack trace is bad, its filled with lambda functions.
+  ; Fix:
+  ; 1. Simple: Catch exception, print fn details using its var, raise the exception.
+  ; 2. Might be complex: see how clojure creates stacktrace, and is there a way to modify it.
+  )
 
 ;; -------------
 (defn redefs-fn-permanent
@@ -97,3 +101,51 @@
     (zipmap
       fn-vars
       (map #(partial template % (deref %)) fn-vars))))
+
+(comment
+  ; can you call a symbol
+  ; var?
+  ; value?
+
+  (defn foo
+    [a]
+    (/ 1 a))
+
+  (defn type-of-thing
+    [thing]
+    (cond
+      (symbol? thing) :symbol
+      (var? thing) :var
+      :else :value))
+  (map type-of-thing [foo #'foo 'foo])
+  (map type [foo #'foo 'foo])
+
+  ; calling
+  (#'foo :a)
+  (foo :a)
+  ('foo :a)                                                 ; ??
+  ; interesting
+  ; https://clojure.org/reference/data_structures#Symbols
+  ; sumbols are just like keywords
+  ('foo {'foo 1})
+  (:a nil)
+
+  ;; Conclusion
+  ; Function call can be made using either value or var.
+  ; Symbol cant be used to make a function call directly. See fn resolve
+  ; -------------------------------
+
+  ; can we change the value of var in way that metadata of var is not affected?
+  (meta (var foo))
+  (meta #'foo)
+
+  (with-redefs-fn {#'foo (fn [x] :a)}
+    (fn []
+      (println (foo 1))
+      ; proves that binding is actually changes
+      (println (('foo (ns-interns *ns*)) 1))
+      ; but metadata has not changes
+      (meta ('foo (ns-interns *ns*)))))
+  :conclusion
+  ; metadata stays unchanged when using with-redefs-fn
+  )
