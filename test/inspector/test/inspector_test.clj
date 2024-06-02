@@ -150,6 +150,6 @@ rv: 1
         output (slurp file)]
     (is (or
           (= (rest (str/split-lines parallel-tracked-vars-output-1|simplest))
-               (rest (str/split-lines output)))
+             (rest (str/split-lines output)))
           (= (rest (str/split-lines parallel-tracked-vars-output-2|simplest))
              (rest (str/split-lines output)))))))

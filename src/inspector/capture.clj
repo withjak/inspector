@@ -4,25 +4,15 @@
 
 (def accumulator (atom []))
 
-(defn prepare-fn-record
-  [meta-data fn-args {:keys [caller-thread-id t-id c-id id]}]
-  {:fn-name          (utils/full-name meta-data)
-   :fn-args          fn-args
-   :id               id
-   :c-id             c-id
-   :t-id             t-id
-   :caller-thread-id caller-thread-id})
-
 (defn b-action
   [meta-data fn-args shared]
-  (swap! accumulator conj (prepare-fn-record meta-data fn-args shared))
+  (swap! accumulator conj (utils/prepare-fn-record meta-data fn-args shared))
   shared)
 
 (defn a-action
   [meta-data fn-args shared return-value]
-  (let [record (-> (prepare-fn-record meta-data fn-args shared)
-                   (assoc :fn-rv return-value
-                          :execution-time (:execution-time shared)))]
+  (let [record (-> (utils/prepare-fn-record meta-data fn-args shared)
+                   (assoc :fn-rv return-value))]
     (swap! accumulator conj record))
   shared)
 
@@ -33,7 +23,11 @@
   [vars f]
   (binding [core/*modify-fns* true]
     (let [executor (core/attach-template vars capture-template)
-          rv (executor f)
+          {:keys [rv e]} (try
+                           {:rv (executor f)}
+                           (catch Exception e
+                             {:e e}))
           fn-call-records @accumulator]
       (reset! accumulator [])
-      {:rv rv :fn-call-records fn-call-records})))
+      {:rv rv :e e :fn-call-records fn-call-records})))
+

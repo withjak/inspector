@@ -8,9 +8,10 @@
 
 (defn parallel [_] (vec (pmap simple (range 2))))
 
+; TODO: some times there are 4 threads ans sometimes 3. Check why is that happening.
 (deftest parallel-test
   (let [my-project-vars [#'simplest #'simple #'parallel]
-        {:keys [rv fn-call-records]} (capture/run my-project-vars #(parallel 1))
+        {:keys [e rv fn-call-records]} (capture/run my-project-vars #(parallel 1))
         groups (group-by :fn-name fn-call-records)
         rv-records (filter #(contains? % :fn-rv) fn-call-records)
         execution-time (map :execution-time rv-records)
@@ -90,3 +91,29 @@
       (is (= (frequencies rv) {0 1 1 1 nil 2}))
       (doseq [{:keys [caller-thread-id t-id]} s]
         (is (= caller-thread-id t-id))))))
+
+(defn simplest-fail [i] (/ i 0))
+
+(defn simple-fail [i] (simplest-fail i))
+
+(defn parallel-fail [_] (vec (pmap simple-fail (range 2))))
+
+(deftest stack-trace-is-usable-test
+  (let [my-project-vars [#'simplest-fail #'simple-fail #'parallel-fail]
+        {:keys [e rv fn-call-records]} (capture/run my-project-vars #(parallel-fail 1))]
+    (is (not= nil e))
+    (is (let [names (->> (Throwable->map e)
+                         :trace
+                         (map first)
+                         (map name)
+                         set)]
+          (every?
+            #(contains? names %)
+            ["inspector.test.capture_test$simple_fail"
+             "inspector.test.capture_test$simplest_fail"])
+          ; TODO: why is inspector.test.capture_test$parallel_fail not showing up?
+          ))
+
+    (let [groups (group-by :fn-name fn-call-records)
+          rv-records (filter #(contains? % :fn-rv) fn-call-records)]
+      (is (every? :e rv-records)))))

@@ -39,3 +39,15 @@
   [& _]
   true)
 
+(defn prepare-fn-record
+  [meta-data fn-args {:keys [caller-thread-id t-id c-id id execution-time e]}]
+  (merge
+    {:fn-name          (full-name meta-data)
+     :fn-args          fn-args
+     :id               id
+     :c-id             c-id
+     :t-id             t-id
+     :caller-thread-id caller-thread-id}
+    (when execution-time {:execution-time execution-time})
+    (when e {:e (str e)})))
+
