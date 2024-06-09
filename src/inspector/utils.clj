@@ -41,15 +41,16 @@
   true)
 
 (defn prepare-fn-record
-  [meta-data fn-args {:keys [c-tid tid c-id id uuid execution-time e fn-rv] :as shared}]
+  [meta-data fn-args {:keys [c-tid tid c-id c-chain id uuid execution-time e fn-rv] :as shared}]
   (merge
-    {:fn-name          (full-name meta-data)
-     :fn-args          fn-args
-     :id               id
-     :tid              tid
-     :c-id             c-id
-     :c-tid            c-tid
-     :uuid             uuid}
+    {:fn-name (full-name meta-data)
+     :fn-args fn-args
+     :id      id
+     :tid     tid
+     :c-id    c-id
+     :c-tid   c-tid
+     :c-chain c-chain
+     :uuid    uuid}
     (when execution-time {:execution-time execution-time})
     (when e {:e (str e)})
     (when (contains? shared :fn-rv) {:fn-rv fn-rv})))

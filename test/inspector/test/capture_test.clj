@@ -13,12 +13,30 @@
   (let [my-project-vars [#'simplest #'simple #'parallel]
         {:keys [e rv fn-call-records]} (capture/run my-project-vars #(parallel 1))
         groups (group-by :fn-name fn-call-records)
-        rv-records (filter #(contains? % :fn-rv) fn-call-records)
+        rv-records (filter :fn-rv fn-call-records)
         execution-time (map :execution-time rv-records)
         id-s (map :id fn-call-records)
         c-id-s (map :c-id fn-call-records)
         c-t-id-s (map :c-tid fn-call-records)
-        t-id-s (map :tid fn-call-records)]
+        t-id-s (map :tid fn-call-records)
+        c-chains (map :c-chain fn-call-records)]
+
+    (testing "count of records"
+      (is (= 10 (count fn-call-records)))
+      (is (= 5 (count rv-records)))
+      ; records are same before and after running function
+      (is (= (->> fn-call-records
+                  (filter (comp not :fn-rv))
+                  set)
+             (->> rv-records
+                  (map  #(dissoc % :fn-rv :execution-time))
+                  set)))
+      ; only these keys should be present
+      (is (= {[:fn-name :fn-args :id :tid :c-id :c-tid :c-chain :uuid]  5
+              [:tid :c-chain :fn-name :execution-time :id :fn-args :c-id :uuid :c-tid :fn-rv] 5}
+             (->> fn-call-records
+                    (map keys)
+                    frequencies))))
 
     (testing "testing correct args, rv and function calls"
       (is (= (->> rv-records

@@ -61,23 +61,22 @@
      (fn modified-value
        [& args]
        (if (or modify-all *modify-fns*)
-         (let [{:keys [id tid uuid] :as shared-state} {:c-tid (:c-tid *state*) ; (or (:c-tid *state*) (get-thread-id)) ; when this is the first fn in this thread to be executed
-                                                       :c-id  (:c-id *state*) ; (or (:c-id *state*) 0) ; for "f" its c-id is the id of its caller
-                                                       :uuid  (or (:uuid *state*) (random-uuid))
-                                                       :tid   (get-thread-id) ; tid is sufficient to deduce :caller-thread-id, but still keeping :caller-thread-id as it easier to so.
-                                                       :id    (swap! id inc)}]
+         (let [{:keys [id tid uuid c-chain] :as shared-state} {:c-chain (or (:c-chain *state*) [])
+                                                               :c-tid   (:c-tid *state*) ; when this is the first fn in this thread to be executed
+                                                               :c-id    (:c-id *state*) ; for "f" its c-id is the id of its caller
+                                                               :uuid    (or (:uuid *state*) (random-uuid))
+                                                               :tid     (get-thread-id) ; tid is sufficient to deduce :caller-thread-id, but still keeping :caller-thread-id as it easier to so.
+                                                               :id      (swap! id inc)}]
            ;; for fns that "f" calls, f's id will be their c-id
-           (binding [*state* {:c-id id :c-tid tid :uuid uuid}]
+           (binding [*state* {:c-id id :c-tid tid :uuid uuid :c-chain (conj c-chain id)}]
              (let [shared (run-rules before-rules meta-data args shared-state)
                    start-time (nano-time)
                    {:keys [rv e]} (try
                                     {:rv (apply fn-value args)}
                                     (catch Exception e
                                       {:e e}))
-                   shared (assoc shared
-                            :execution-time (- (nano-time) start-time)
-                            :fn-rv rv
-                            :e e)]
+                   execution-time (- (nano-time) start-time)
+                   shared (assoc shared :execution-time execution-time :fn-rv rv :e e)]
                (run-rules after-rules meta-data args shared)
                (if e
                  (throw e)
