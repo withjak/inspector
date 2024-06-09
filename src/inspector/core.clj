@@ -1,20 +1,11 @@
 (ns inspector.core)
 
-(defn run-before-rules
+(defn run-rules
   "Executes action if condition evaluates to truthy value."
   [rules meta-data fn-args shared]
   (let [evaluate (fn [shared [condition action]]
                    (if (condition meta-data fn-args shared)
                      (action meta-data fn-args shared)      ;; action must return "shared" (a map)
-                     shared))]
-    (reduce evaluate shared (partition 2 rules))))
-
-(defn run-after-rules
-  "Executes action if condition evaluates to truthy value."
-  [rules meta-data fn-args shared return-value]
-  (let [evaluate (fn [shared [condition action]]
-                   (if (condition meta-data fn-args shared return-value)
-                     (action meta-data fn-args shared return-value) ;; action must return "shared" (a map)
                      shared))]
     (reduce evaluate shared (partition 2 rules))))
 
@@ -24,7 +15,9 @@
     (try (.threadId t)
          (catch Exception e (.getId t)))))
 
+; when set as true, using bindings, then data for all fns running in that thread (and threads it spawns) will be tracked.
 (def ^:dynamic *modify-fns* false)
+; when set as true, the data of all fns running across all threads will be tracked.
 (def modify-all (atom false))
 
 ; *state* is used by modified fn
@@ -32,11 +25,25 @@
 ; then updating *state* to pass-down its own information to its children.
 ; This works because
 ; *state* is dynamic, because dynamic is thread local. And in a thread execution is sequential.
-(def ^:dynamic *state* {:caller-thread-id (get-thread-id) :caller-id 0})
-; :caller-id 0 might be an issue in case process spans multiple threads at the start
-; issue like it caller-id = 0 wont be unique anymore. But :caller-thread-id :caller-id combination will still be unique
-; Also think what will happen when when we alter root bindings permanently
+; more generally think of any information that need to be shared in a thread and all its children threads.
+(def ^:dynamic *state* nil)
 (def id (atom 0))
+
+(comment
+  ; TODO: Explore
+  ; get rid of atom "id". and start with *state* = nil
+  ; in create-template check if *state* = nil then
+  ; {:caller-thread-id (get-thread-id) :caller-id 0} or
+  ; also add :caller-id-chain = [] and
+  ; when no caller, then add #uuid as first entry, this will be good for traceability.
+  ; or may be add :uuid as a field.
+  ; also think about at what time is inspector injected into the system, when applying inspector globally.
+  ; 1. Every ns is loaded and now injecting inspector, like running it at the end of -main
+  ;    This will let every long running thread its own #uuid, i.e. for e.g. all handlers will have unique #uuid
+  ; 2. Injecting before any long running threads are spawned. then only the main thread will have #uuid.
+  ; Maybe then it should be mentioned as best practice to inject inspector for global monitoring
+  ; either after every component has been loaded (either in source code or via repl)
+  )
 
 (defn nano-time
   []
@@ -54,25 +61,24 @@
      (fn modified-value
        [& args]
        (if (or modify-all *modify-fns*)
-         (let [{:keys [id t-id] :as shared-state} {:caller-thread-id (:caller-thread-id *state*)
-                                                   ; t-id is sufficient to deduce :caller-thread-id, but still keeping :caller-thread-id as it easier to so.
-                                                   :t-id             (get-thread-id)
-                                                   :id               (swap! id inc)
-                                                   ;; for "f" its c-id is the id of its caller
-                                                   :c-id             (:caller-id *state*)}]
+         (let [{:keys [id tid uuid] :as shared-state} {:c-tid (:c-tid *state*) ; (or (:c-tid *state*) (get-thread-id)) ; when this is the first fn in this thread to be executed
+                                                       :c-id  (:c-id *state*) ; (or (:c-id *state*) 0) ; for "f" its c-id is the id of its caller
+                                                       :uuid  (or (:uuid *state*) (random-uuid))
+                                                       :tid   (get-thread-id) ; tid is sufficient to deduce :caller-thread-id, but still keeping :caller-thread-id as it easier to so.
+                                                       :id    (swap! id inc)}]
            ;; for fns that "f" calls, f's id will be their c-id
-           (binding [*state* {:caller-id id
-                              ; :caller-id-chain (conj (:caller-id *state*) id)
-                              :caller-thread-id t-id}]
-             (let [shared (run-before-rules before-rules meta-data args shared-state)
+           (binding [*state* {:c-id id :c-tid tid :uuid uuid}]
+             (let [shared (run-rules before-rules meta-data args shared-state)
                    start-time (nano-time)
                    {:keys [rv e]} (try
                                     {:rv (apply fn-value args)}
                                     (catch Exception e
                                       {:e e}))
-                   shared (assoc shared :execution-time (- (nano-time) start-time)
-                                        :e e)]
-               (run-after-rules after-rules meta-data args shared rv)
+                   shared (assoc shared
+                            :execution-time (- (nano-time) start-time)
+                            :fn-rv rv
+                            :e e)]
+               (run-rules after-rules meta-data args shared)
                (if e
                  (throw e)
                  rv))))
@@ -88,23 +94,6 @@
       ;; run fn f in this modified environment
       #(f))))
 
-(comment
-  ;; TODO
-  ;; IDEA - (apply original-fn (or (:modified-args shared) args))
-  ;; USE CASE - when connecting to db, connect to dev db instead of production
-
-  ;; TODO - pass new argument called exception to after actions and conditions
-  ;[return-value (try (apply original-fn args)
-  ;                   (catch Exception e
-  ;                     (run-after-rules after-rules (meta var) args shared {:error (.getMessage e)})
-  ;                     (throw e)))]
-
-  ; TODO: In case an un caught exception occurs, the stack trace is bad, its filled with lambda functions.
-  ; Fix:
-  ; 1. Simple: Catch exception, print fn details using its var, raise the exception.
-  ; 2. Might be complex: see how clojure creates stacktrace, and is there a way to modify it.
-  )
-
 ;; -------------
 (defn attach-template-permanent
   [fn-vars template]
@@ -119,9 +108,9 @@
 (defn restore-original-value
   [fn-vars]
   (doseq [fn-var fn-vars]
-    (when-let [orignial-value (:inspector-original-value (meta fn-var))]
+    (when-let [original-value (:inspector-original-value (meta fn-var))]
       (alter-meta! fn-var dissoc :inspector-original-value)
-      (alter-var-root fn-var (fn [_] orignial-value)))))
+      (alter-var-root fn-var (fn [_] original-value)))))
 
 (comment
   (defn foo

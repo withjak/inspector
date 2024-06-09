@@ -7,9 +7,22 @@
             [inspector.tree :as tree])
   (:import java.util.Date))
 
+(defn handle-nil-c-id
+  "Hack so that I do not have to change code that
+  assumes that 0 is the c-id of the first caller
+  "
+  [fn-call-records]
+  (map
+    (fn [{:keys [c-id] :as m}]
+      (if (nil? c-id)
+        (assoc m :c-id 0)
+        m))
+    fn-call-records))
+
 (defn print-call-hierarchy
   [printer fn-call-records]
-  (let [rv-records (filter #(contains? % :fn-rv) fn-call-records)
+  (let [fn-call-records (handle-nil-c-id fn-call-records)
+        rv-records (filter #(contains? % :fn-rv) fn-call-records)
 
         ; {1 [2 3], 2 [4], 3 [5]}
         id-adjacency-list (update-vals (group-by :c-id rv-records) #(map :id %))
@@ -32,7 +45,8 @@
 
 (defn find-calls-to-vars
   [fn-call-records tracked-vars]
-  (let [rv-records (filter #(contains? % :fn-rv) fn-call-records)
+  (let [fn-call-records (handle-nil-c-id fn-call-records)
+        rv-records (filter #(contains? % :fn-rv) fn-call-records)
         id-record-map (into {} (map #(vector (:id %) %) rv-records))
         id-c-id-map (into {} (map #(vector (:id %) (:c-id %)) rv-records))
         fn-name-id-map (->> rv-records
@@ -54,7 +68,7 @@
                                                                call-chains)
                                            d (map
                                                (fn [call-chain]
-                                                 {:call-chain     (map #(get-in id-record-map [% :fn-name]) call-chain)
+                                                 {:call-chain      (map #(get-in id-record-map [% :fn-name]) call-chain)
                                                   :fn-call-records (get id-record-map (last call-chain))})
                                                valid-call-chains)]
                                        (recur (apply conj r d) tfn))

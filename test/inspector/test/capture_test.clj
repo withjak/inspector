@@ -17,8 +17,8 @@
         execution-time (map :execution-time rv-records)
         id-s (map :id fn-call-records)
         c-id-s (map :c-id fn-call-records)
-        c-t-id-s (map :caller-thread-id fn-call-records)
-        t-id-s (map :t-id fn-call-records)]
+        c-t-id-s (map :c-tid fn-call-records)
+        t-id-s (map :tid fn-call-records)]
 
     (testing "testing correct args, rv and function calls"
       (is (= (->> rv-records
@@ -41,8 +41,13 @@
                 :fn-rv   [0 1]}})))
 
     (is (every? int? id-s))
-    (is (every? int? c-id-s))
-    (is (every? int? c-t-id-s))
+    (is (= {java.lang.Long 8 nil 2}
+           (-> (group-by type c-id-s)
+               (update-vals count))))
+    (is (= {java.lang.Long 8
+            nil            2}
+           (-> (group-by type c-t-id-s)
+               (update-vals count))))
     (is (every? int? t-id-s))
     (is (every? int? execution-time))
 
@@ -56,14 +61,16 @@
 
     (testing "number of unique threads created"
       (is (= (->> fn-call-records
-                  (map :caller-thread-id)
+                  (map :tid)
                   set
                   count)
-             (->> fn-call-records
-                  (map :t-id)
+             3))
+      ; includes nil as well
+      (is (= (->> fn-call-records
+                  (map :c-tid)
                   set
                   count)
-             3)))
+             4)))
 
     (let [s (get groups "inspector.test.capture-test/parallel")
           args (map :fn-args s)
@@ -80,8 +87,8 @@
       (is (= (count s) 4))
       (is (= (frequencies args) {'(0) 2 '(1) 2}))
       (is (= (frequencies rv) {0 1 1 1 nil 2}))
-      (doseq [{:keys [caller-thread-id t-id]} s]
-        (is (not= caller-thread-id t-id))))
+      (doseq [{:keys [c-tid t-id]} s]
+        (is (not= c-tid t-id))))
 
     (let [s (get groups "inspector.test.capture-test/simplest")
           args (map :fn-args s)

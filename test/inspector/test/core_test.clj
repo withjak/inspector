@@ -3,7 +3,7 @@
             [inspector.core :as core]
             [inspector.utils :as utils]))
 
-(deftest run-before-rules|share-working?-test
+(deftest run-rules|share-working?-test
   (let [c-t (fn [& _] true)
         c-f (fn [& _] false)
         a1 (fn [_meta-data _fn-args shared] shared)
@@ -14,21 +14,7 @@
         rules [c-t a1 c-t a2 c-f a3 c-t a4 c-t a5]
         meta-data {}
         fn-args []]
-    (is (= (core/run-before-rules rules meta-data fn-args {})
-           {:a2 2, :a4 4}))))
-
-(deftest run-after-rules|share-working?-test
-  (let [c-t (fn [& _] true)
-        c-f (fn [& _] false)
-        a1 (fn [_meta-data _fn-args shared _return-value] shared)
-        a2 (fn [_meta-data _fn-args shared _return-value] (assoc shared :a2 2))
-        a3 (fn [_meta-data _fn-args shared _return-value] (assoc shared :a3 3))
-        a4 (fn [_meta-data _fn-args shared _return-value] (assoc shared :a4 4))
-        a5 (fn [_meta-data _fn-args shared _return-value] shared)
-        rules [c-t a1 c-t a2 c-f a3 c-t a4 c-t a5]
-        meta-data {}
-        fn-args []]
-    (is (= (core/run-after-rules rules meta-data fn-args {} 1)
+    (is (= (core/run-rules rules meta-data fn-args {})
            {:a2 2, :a4 4}))))
 
 (defn foo [a] a)
@@ -43,7 +29,7 @@
 
 (deftest attach-template-permanent-fn-value-test
   (let [DATA (atom [])
-        store-data (fn [_meta-data _fn-args shared _return-value]
+        store-data (fn [_meta-data _fn-args shared]
                      (swap! DATA conj shared))
         template (core/create-template [] [utils/always store-data])]
     (core/attach-template-permanent #{#'foo} template)
@@ -53,7 +39,7 @@
 
 (deftest restore-original-value-test
   (let [DATA (atom [])
-        store-data (fn [_meta-data _fn-args shared _return-value]
+        store-data (fn [_meta-data _fn-args shared]
                      (swap! DATA conj shared))
         template (core/create-template [] [utils/always store-data])
         fn-vars #{#'foo}]
