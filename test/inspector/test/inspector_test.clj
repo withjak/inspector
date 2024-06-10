@@ -50,7 +50,7 @@ L-- [0 1]
 
 (deftest print-captured-data-test
   (let [my-project-vars [#'simplest #'simple #'parallel]
-        output (with-out-str (i/print-captured-data my-project-vars #(parallel 1)))]
+        output (with-out-str (i/iprint my-project-vars #(parallel 1)))]
     (is (or
           (= (rest (str/split-lines parallel-call-hierarchy-output-1))
              (rest (str/split-lines output)))
@@ -59,7 +59,7 @@ L-- [0 1]
 
 (deftest spit-captured-data-test
   (let [my-project-vars [#'simplest #'simple #'parallel]
-        rv (i/spit-captured-data file my-project-vars #(parallel 1))
+        rv (i/ispit file my-project-vars #(parallel 1))
         output (slurp file)]
     (is (or
           (= (rest (str/split-lines parallel-call-hierarchy-output-1))
@@ -99,7 +99,7 @@ rv: 0
 (deftest print-calls-to-tracked-vars-test
   (let [my-project-vars #{#'simplest #'simple #'parallel}
         output (with-out-str
-                 (i/print-calls-to-tracked-vars #{#'simple #'simplest} my-project-vars #(parallel 1)))]
+                 (i/iprint-tracked #{#'simple #'simplest} my-project-vars #(parallel 1)))]
     (is (or
           (= (rest (str/split-lines parallel-tracked-vars-output-1|simple))
              (rest (str/split-lines output)))
@@ -108,7 +108,7 @@ rv: 0
 
 (deftest spit-calls-to-tracked-vars-test|simple
   (let [my-project-vars #{#'simplest #'simple #'parallel}
-        rv (i/spit-calls-to-tracked-vars file #{#'simple #'simplest} my-project-vars #(parallel 1))
+        rv (i/ispit-tracked file #{#'simple #'simplest} my-project-vars #(parallel 1))
         output (slurp file)]
     (is (or
           (= (rest (str/split-lines parallel-tracked-vars-output-1|simple))
@@ -146,7 +146,7 @@ rv: 1
 
 (deftest spit-calls-to-tracked-vars-test|simplest
   (let [my-project-vars #{#'simplest #'simple #'parallel}
-        rv (i/spit-calls-to-tracked-vars file #{#'simplest} my-project-vars #(parallel 1))
+        rv (i/ispit-tracked file #{#'simplest} my-project-vars #(parallel 1))
         output (slurp file)]
     (is (or
           (= (rest (str/split-lines parallel-tracked-vars-output-1|simplest))

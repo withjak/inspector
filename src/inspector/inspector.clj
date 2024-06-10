@@ -103,29 +103,35 @@
   [vars]
   (difference vars inspector-fn-vars))
 
+(defn get-vars
+  "Returns all function vars available in namespaces,
+   whose string representation matches `regex`."
+  [regex]
+  (fn-find/get-vars regex))
+
 ;; Repl debug mode fns --------------------------------------------------------------
 
-(defn print-captured-data
+(defn iprint
   [vars f]
   (let [{:keys [rv fn-call-records]} (capture/run (remove-inspector-fn-vars vars) f)]
     (print-call-hierarchy println fn-call-records)
     rv))
 
-(defn spit-captured-data
+(defn ispit
   [file vars f]
   (let [{:keys [rv fn-call-records]} (capture/run (remove-inspector-fn-vars vars) f)]
     (print-call-hierarchy (partial print-to-file file) fn-call-records)
     rv))
 
 ; tracked vars
-(defn print-calls-to-tracked-vars
+(defn iprint-tracked
   [tracked-vars vars f]
   (let [{:keys [rv fn-call-records]} (capture/run (remove-inspector-fn-vars vars) f)
         call-to-tracked-vars (find-calls-to-vars fn-call-records tracked-vars)]
     (print-var-calls println call-to-tracked-vars)
     rv))
 
-(defn spit-calls-to-tracked-vars
+(defn ispit-tracked
   [file tracked-vars vars f]
   (let [{:keys [rv fn-call-records]} (capture/run (remove-inspector-fn-vars vars) f)
         call-to-tracked-vars (find-calls-to-vars fn-call-records tracked-vars)]

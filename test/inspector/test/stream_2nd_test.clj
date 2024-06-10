@@ -21,13 +21,11 @@
       (alter q pop)
       item)))
 
-
 (defn start-consumer
   [q handler-fn]
   (future
     (loop []
       (when-let [message (dequeue q)]
-        (println "message " message)
         (handler-fn message))
       (recur))))
 
@@ -39,13 +37,10 @@
       (enqueue q m))))
 
 (defn foo
-  [m]
-  (println "foo")
-  m)
+  [m] m)
 
 (defn handler
   [message]
-  (println "I was called")
   [(foo message) :ok])
 
 (deftest foo-test

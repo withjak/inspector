@@ -31,14 +31,13 @@ Check https://clojars.org/org.clojars.akshay/inspector
 ### Setup
 
 ```clojure
-(require '[inspector.inspector :as i]
-         '[inspector.fn-find :as fn-find])
+(require '[inspector.inspector :as i])
 
-; fn-find/get-vars returns a set of all vars which corresponds to functions
+; i/get-vars returns a set of all vars which corresponds to functions
 ; defined in all namespaces, which matches provided regex #"your-code-base.*"
 (def my-vars
    ; Generally you would want to track all functions that you have defined.
-   (fn-find/get-vars #"your-code-base.*"))
+   (i/get-vars #"your-code-base.*"))
 ```
 
 ### REPL debug
@@ -47,10 +46,10 @@ Check https://clojars.org/org.clojars.akshay/inspector
 ```clojure
 ; visualizing all the function being called by (my-fn arg1 arg2 argn)
 ; print to std-out
-(i/print-captured-data my-vars #(my-fn arg1 arg2 argn))
+(i/iprint my-vars #(my-fn arg1 arg2 argn))
 
 ; write to a file instead
-(i/spit-captured-data "/tmp/hierarchy.log" my-vars #(my-fn arg1 arg2 argn))
+(i/ispit "/tmp/hierarchy.log" my-vars #(my-fn arg1 arg2 argn))
 ```
 ##### Example output
 From `inspector.test.inspector-test`
@@ -80,14 +79,14 @@ L-- [0 1]
 #### Show calls to database
 ```clojure
 ; Calling you function to see if its performing any CRUD operations in mongodb (or any other library/libraries)
-(i/print-calls-to-tracked-vars 
-   (fn-find/get-vars #"mongodb.*")  ; Track all functions defined in mongodb library
+(i/iprint-tracked 
+   (i/get-vars #"mongodb.*")  ; Track all functions defined in mongodb library
    my-vars
    #(my-fn arg1 arg2 argn))
 
 ; you can write to file instead
-(i/spit-calls-to-tracked-vars
-   (fn-find/get-vars #"mongodb.*") 
+(i/ispit-tracked
+   (i/get-vars #"mongodb.*") 
    my-vars
    #(my-fn arg1 arg2 argn))
 ```
@@ -114,7 +113,7 @@ call-chain: shows the order in which different functions were called which final
 #### Get raw data
 ```clojure
 ; rv is return value of (my-fn arg1 arg2 argn)
-(let [{:keys [rv fn-call-records]} (i/export-raw my-vars #(my-fn arg1 arg2 argn)]
+(let [{:keys [e rv fn-call-records]} (i/export-raw my-vars #(my-fn arg1 arg2 argn)]
    fn-call-records)
 ```
 
