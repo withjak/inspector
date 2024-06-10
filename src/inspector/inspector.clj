@@ -95,6 +95,7 @@
                 #"inspector.tree"
                 #"inspector.utils"
                 #"inspector.capture"
+                #"inspector.stream"
                 #"inspector.inspector"
                 #"inspector.test.*"])))
 

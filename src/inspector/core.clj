@@ -103,25 +103,6 @@
       (alter-var-root fn-var (fn [_] original-value)))))
 
 (comment
-  (defn foo
-    [a]
-    a)
-
-  (let [foo-var #'foo
-        foo-value (deref #'foo)]
-    (alter-var-root foo-var (fn [_]
-                              (prn (type foo-value))
-                              (fn [n]
-                                (println "Squaring" n)
-                                (foo-value n)))))
-  (foo 1)
-
-  (def ^{:version 1} document "This is text")
-  (meta #'document)
-  (alter-meta! #'document assoc :yo 123)
-  (meta #'document))
-
-(comment
   ; can you call a:
   ; symbol?
   ; var?
