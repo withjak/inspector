@@ -52,7 +52,7 @@
      :c-chain c-chain
      :uuid    uuid}
     (when execution-time {:execution-time execution-time})
-    (when e {:e (str e)})
+    (when e {:e (Throwable->map e)})
     (when (contains? shared :fn-rv) {:fn-rv fn-rv})))
 
 (defn walk-n-replace

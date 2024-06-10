@@ -4,6 +4,7 @@
             [inspector.utils :as utils]
             [inspector.fn-find :as fn-find]
             [inspector.capture :as capture]
+            [inspector.stream :as stream]
             [inspector.tree :as tree])
   (:import java.util.Date))
 
@@ -101,8 +102,7 @@
   [vars]
   (difference vars inspector-fn-vars))
 
-;; -------------------------------------------------------------------------
-;; fns to be used by end user
+;; Repl debug mode fns --------------------------------------------------------------
 
 (defn print-captured-data
   [vars f]
@@ -116,6 +116,7 @@
     (print-call-hierarchy (partial print-to-file file) fn-call-records)
     rv))
 
+; tracked vars
 (defn print-calls-to-tracked-vars
   [tracked-vars vars f]
   (let [{:keys [rv fn-call-records]} (capture/run (remove-inspector-fn-vars vars) f)
@@ -130,14 +131,19 @@
     (print-var-calls (partial print-to-file file) call-to-tracked-vars)
     rv))
 
+; export
+(defn export-raw
+  [vars f]
+  (capture/run (remove-inspector-fn-vars vars) f))
 
-;(defn show-all-calls-perm
-;  [vars]
-;  (core/modify-fns-permanent (remove-inspector-fn-vars vars) printer/printer))
+(defn export
+  "Same as `export-raw` with stringify non primitive types present in.
+  In progress not complete yet"
+  [vars f]
+  (let [{:keys [rv fn-call-records]} (capture/run (remove-inspector-fn-vars vars) f)]
+    {:rv rv :fn-call-records (utils/stringify-non-primitives fn-call-records)}))
 
-;(defn export-perm
-;  [filename vars]
-;  (core/modify-fns-permanent
-;    (remove-inspector-fn-vars vars)
-;    (exporter/exporter (partial exporter-fn filename))))
-
+;; Omnipresent debug mode fns --------------------------------------------------------------
+(defn stream-raw
+  [vars f]
+  (stream/start-streaming (remove-inspector-fn-vars vars) f))

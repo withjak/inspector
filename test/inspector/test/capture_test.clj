@@ -29,14 +29,14 @@
                   (filter (comp not :fn-rv))
                   set)
              (->> rv-records
-                  (map  #(dissoc % :fn-rv :execution-time))
+                  (map #(dissoc % :fn-rv :execution-time))
                   set)))
       ; only these keys should be present
-      (is (= {[:fn-name :fn-args :id :tid :c-id :c-tid :c-chain :uuid]  5
+      (is (= {[:fn-name :fn-args :id :tid :c-id :c-tid :c-chain :uuid]                        5
               [:tid :c-chain :fn-name :execution-time :id :fn-args :c-id :uuid :c-tid :fn-rv] 5}
              (->> fn-call-records
-                    (map keys)
-                    frequencies))))
+                  (map keys)
+                  frequencies))))
 
     (testing "testing correct args, rv and function calls"
       (is (= (->> rv-records
@@ -116,6 +116,7 @@
       (is (= (frequencies rv) {0 1 1 1 nil 2}))
       (doseq [{:keys [caller-thread-id t-id]} s]
         (is (= caller-thread-id t-id))))))
+
 
 (defn simplest-fail [i] (/ i 0))
 

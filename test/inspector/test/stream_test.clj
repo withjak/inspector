@@ -59,10 +59,21 @@
          (-> (map :fn-name @STREAMED-DATA)
              frequencies)))
 
-  (is (= {"java.lang.ArithmeticException: Divide by zero" 3}
+  (is (= 3
          (->> (filter :e @STREAMED-DATA)
               (map :e)
-              frequencies))))
+              count)))
+  (is (= 1
+         (->> (filter :e @STREAMED-DATA)
+              (map :e)
+              set
+              count)))
+  (is (= '(:via :trace :cause)
+         (->> (filter :e @STREAMED-DATA)
+              (map :e)
+              set
+              first
+              keys))))
 
 ; TODO: expand on this test
 (deftest stream-from-multiple-independent-threads-test
