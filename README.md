@@ -147,6 +147,8 @@ From `inspector.test.capture-test`
 ```
 
 ### Ominpresent debug
+
+Start Streaming
 ```clojure
 (defn export-fn 
   [{:keys [:fn-name :fn-args :fn-rv :id :tid :c-id :c-tid :c-chain :uuid :execution-time :e] :as data}]
@@ -155,8 +157,22 @@ From `inspector.test.capture-test`
   )
   
 ; export-fn will be called every time a function execution completes
-(i/stream my-project-vars export-fn)
+(i/stream my-vars export-fn)
 ```
+
+To skip modifying a function either remove it's var from `my-vars` or add metadata `:inspector-skip`.
+```clojure
+(defn ^:inspector-skip foo
+  [args]
+  :body)
+```
+
+Restore vars to original value
+```clojure
+(inspector.core/restore-original-value my-vars)
+```
+
+
 
 ## How inspector work?
 
@@ -174,7 +190,6 @@ This `new value` (or new function) will wrap the original `value` (or function) 
 Inspector provides a structured way to modify a lot of `values`(functions) at once in this way.
 
 ## Todo
-- expose `start-streaming` from `inspector.inspector`
 - finally standardise public api
 - refactor `capture.clj` to use `stream.clj`
 - complete tests

@@ -15,35 +15,23 @@
     (try (.threadId t)
          (catch Exception e (.getId t)))))
 
-; when set as true, using bindings, then data for all fns running in that thread (and threads it spawns) will be tracked.
-(def ^:dynamic *modify-fns* false)
-; when set as true, the data of all fns running across all threads will be tracked.
-(def modify-all (atom false))
+(def ^:dynamic *modify-fns*
+  "When set as true - the data of all fns running in that thread (and threads it spawns) will be tracked."
+  false)
 
-; *state* is used by modified fn
-; to know it's caller's information and
-; then updating *state* to pass-down its own information to its children.
-; This works because
-; *state* is dynamic, because dynamic is thread local. And in a thread execution is sequential.
-; more generally think of any information that need to be shared in a thread and all its children threads.
-(def ^:dynamic *state* nil)
-(def id (atom 0))
+(def modify-all
+  "When set as true - the data of all fns running across all threads will be tracked."
+  (atom false))
 
-(comment
-  ; TODO: Explore
-  ; get rid of atom "id". and start with *state* = nil
-  ; in create-template check if *state* = nil then
-  ; {:caller-thread-id (get-thread-id) :caller-id 0} or
-  ; also add :caller-id-chain = [] and
-  ; when no caller, then add #uuid as first entry, this will be good for traceability.
-  ; or may be add :uuid as a field.
-  ; also think about at what time is inspector injected into the system, when applying inspector globally.
-  ; 1. Every ns is loaded and now injecting inspector, like running it at the end of -main
-  ;    This will let every long running thread its own #uuid, i.e. for e.g. all handlers will have unique #uuid
-  ; 2. Injecting before any long running threads are spawned. then only the main thread will have #uuid.
-  ; Maybe then it should be mentioned as best practice to inject inspector for global monitoring
-  ; either after every component has been loaded (either in source code or via repl)
-  )
+; *state* is dynamic, dynamic is thread local. And in a thread execution is sequential.
+(def ^:dynamic *state*
+  "Contains any information that need to be shared in a thread and all its children threads."
+  nil)
+
+(def id
+  "Unique identifier for each function call.
+  Same fn called with same arguments, will be assigned different id each time its called."
+  (atom 0))
 
 (defn nano-time
   []
@@ -53,6 +41,7 @@
   "Attaches rules (i.e. condition action pairs) before and after execution of a function."
   [before-rules after-rules]
 
+  ^{:doc "Return new value which replaces the original value pointed to by function's var"}
   (fn template
     ([fn-var]
      (template (deref fn-var) (meta fn-var)))
@@ -85,6 +74,8 @@
 
 (defn attach-template
   [fn-vars template]
+
+  ^{:doc "In context of current thread (and any children it spawns), modify `fn-vars` and then call `f` in this modified environment."}
   (fn executor
     [f]
     (with-redefs-fn
@@ -93,8 +84,8 @@
       ;; run fn f in this modified environment
       #(f))))
 
-;; -------------
 (defn attach-template-permanent
+  "Alter root binding of `fn-vars` to point to new value which is a wrapper over the original value"
   [fn-vars template]
   (doseq [fn-var fn-vars]
     ; better, so that no nested templates
@@ -131,7 +122,8 @@
   (meta #'document))
 
 (comment
-  ; can you call a symbol
+  ; can you call a:
+  ; symbol?
   ; var?
   ; value?
 
