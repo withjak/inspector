@@ -1,4 +1,5 @@
-(ns inspector.utils)
+(ns inspector.utils
+  (:require [clojure.walk :as walk]))
 
 (def ^:const reset-color "\u001B[0m")
 
@@ -39,3 +40,43 @@
   [& _]
   true)
 
+(defn prepare-fn-record
+  [meta-data fn-args {:keys [c-tid tid c-id c-chain id uuid execution-time e fn-rv] :as shared}]
+  (merge
+    {:fn-name (full-name meta-data)
+     :fn-args fn-args
+     :id      id
+     :tid     tid
+     :c-id    c-id
+     :c-tid   c-tid
+     :c-chain c-chain
+     :uuid    uuid}
+    (when execution-time {:execution-time execution-time})
+    (when e {:e (Throwable->map e)})
+    (when (contains? shared :fn-rv) {:fn-rv fn-rv})))
+
+(defn walk-n-replace
+  "Applies f to each non-collection thing.
+  Non-collection thing is replaced by the return value."
+  [f form]
+  (walk/walk
+    (partial walk-n-replace f)
+    (fn [form]
+      (if (coll? form) form (f form)))
+    form))
+
+(defn stringify-non-primitives
+  [data]
+  (let [check-primitive [keyword? number? string? char? nil? boolean? symbol?]
+        stringify (fn [form]
+                    (cond
+                      (some #(% form) check-primitive) form
+                      (= (type form) clojure.lang.Atom) (deref form)
+                      :else (do
+                              (prn :type (type form))
+                              (str form))))]
+    (walk-n-replace stringify data)))
+
+(comment
+  ; to get the datatype map
+  (walk-n-replace (fn [form] (vector form (type form))) data))
