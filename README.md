@@ -156,7 +156,7 @@ Start Streaming
   )
   
 ; export-fn will be called every time a function execution completes
-(i/stream my-vars export-fn)
+(i/stream-raw my-vars export-fn)
 ```
 
 To skip modifying a function either remove it's var from `my-vars` or add metadata `:inspector-skip`.
