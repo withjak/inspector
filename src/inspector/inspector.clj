@@ -4,12 +4,26 @@
             [inspector.utils :as utils]
             [inspector.fn-find :as fn-find]
             [inspector.capture :as capture]
+            [inspector.stream :as stream]
             [inspector.tree :as tree])
   (:import java.util.Date))
 
+(defn handle-nil-c-id
+  "Hack so that I do not have to change code that
+  assumes that 0 is the c-id of the first caller
+  "
+  [fn-call-records]
+  (map
+    (fn [{:keys [c-id] :as m}]
+      (if (nil? c-id)
+        (assoc m :c-id 0)
+        m))
+    fn-call-records))
+
 (defn print-call-hierarchy
   [printer fn-call-records]
-  (let [rv-records (filter #(contains? % :fn-rv) fn-call-records)
+  (let [fn-call-records (handle-nil-c-id fn-call-records)
+        rv-records (filter #(contains? % :fn-rv) fn-call-records)
 
         ; {1 [2 3], 2 [4], 3 [5]}
         id-adjacency-list (update-vals (group-by :c-id rv-records) #(map :id %))
@@ -32,7 +46,8 @@
 
 (defn find-calls-to-vars
   [fn-call-records tracked-vars]
-  (let [rv-records (filter #(contains? % :fn-rv) fn-call-records)
+  (let [fn-call-records (handle-nil-c-id fn-call-records)
+        rv-records (filter #(contains? % :fn-rv) fn-call-records)
         id-record-map (into {} (map #(vector (:id %) %) rv-records))
         id-c-id-map (into {} (map #(vector (:id %) (:c-id %)) rv-records))
         fn-name-id-map (->> rv-records
@@ -54,7 +69,7 @@
                                                                call-chains)
                                            d (map
                                                (fn [call-chain]
-                                                 {:call-chain     (map #(get-in id-record-map [% :fn-name]) call-chain)
+                                                 {:call-chain      (map #(get-in id-record-map [% :fn-name]) call-chain)
                                                   :fn-call-records (get id-record-map (last call-chain))})
                                                valid-call-chains)]
                                        (recur (apply conj r d) tfn))
@@ -80,6 +95,7 @@
                 #"inspector.tree"
                 #"inspector.utils"
                 #"inspector.capture"
+                #"inspector.stream"
                 #"inspector.inspector"
                 #"inspector.test.*"])))
 
@@ -87,43 +103,54 @@
   [vars]
   (difference vars inspector-fn-vars))
 
-;; -------------------------------------------------------------------------
-;; fns to be used by end user
+(defn get-vars
+  "Returns all function vars available in namespaces,
+   whose string representation matches `regex`."
+  [regex]
+  (fn-find/get-vars regex))
 
-(defn print-captured-data
+;; Repl debug mode fns --------------------------------------------------------------
+
+(defn iprint
   [vars f]
   (let [{:keys [rv fn-call-records]} (capture/run (remove-inspector-fn-vars vars) f)]
     (print-call-hierarchy println fn-call-records)
     rv))
 
-(defn spit-captured-data
+(defn ispit
   [file vars f]
   (let [{:keys [rv fn-call-records]} (capture/run (remove-inspector-fn-vars vars) f)]
     (print-call-hierarchy (partial print-to-file file) fn-call-records)
     rv))
 
-(defn print-calls-to-tracked-vars
+; tracked vars
+(defn iprint-tracked
   [tracked-vars vars f]
   (let [{:keys [rv fn-call-records]} (capture/run (remove-inspector-fn-vars vars) f)
         call-to-tracked-vars (find-calls-to-vars fn-call-records tracked-vars)]
     (print-var-calls println call-to-tracked-vars)
     rv))
 
-(defn spit-calls-to-tracked-vars
+(defn ispit-tracked
   [file tracked-vars vars f]
   (let [{:keys [rv fn-call-records]} (capture/run (remove-inspector-fn-vars vars) f)
         call-to-tracked-vars (find-calls-to-vars fn-call-records tracked-vars)]
     (print-var-calls (partial print-to-file file) call-to-tracked-vars)
     rv))
 
+; export
+(defn export-raw
+  [vars f]
+  (capture/run (remove-inspector-fn-vars vars) f))
 
-;(defn show-all-calls-perm
-;  [vars]
-;  (core/modify-fns-permanent (remove-inspector-fn-vars vars) printer/printer))
+(defn export
+  "Same as `export-raw` with stringify non primitive types present in.
+  In progress not complete yet"
+  [vars f]
+  (let [{:keys [rv fn-call-records]} (capture/run (remove-inspector-fn-vars vars) f)]
+    {:rv rv :fn-call-records (utils/stringify-non-primitives fn-call-records)}))
 
-;(defn export-perm
-;  [filename vars]
-;  (core/modify-fns-permanent
-;    (remove-inspector-fn-vars vars)
-;    (exporter/exporter (partial exporter-fn filename))))
-
+;; Omnipresent debug mode fns --------------------------------------------------------------
+(defn stream-raw
+  [vars f]
+  (stream/start-streaming (remove-inspector-fn-vars vars) f))
