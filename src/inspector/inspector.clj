@@ -20,8 +20,24 @@
         m))
     fn-call-records))
 
+(defn parse-opts
+  [{:keys [only-start?] :as opts}]
+  (let [default {:start       [:fn-args]
+                 :only-start? false
+                 :end         [:fn-rv]
+                 :indent      "|  "
+                 :marker      {:start "Г--"
+                               :end   "L--"}}
+        only-start-opts {:start       [:fn-args :fn-rv]
+                         :only-start? true
+                         :indent      "   "
+                         :marker      {:start "-->"}}]
+    (if only-start?
+      (merge only-start-opts opts)
+      (merge default opts))))
+
 (defn print-call-hierarchy
-  [printer fn-call-records]
+  [printer opts fn-call-records]
   (let [fn-call-records (handle-nil-c-id fn-call-records)
         rv-records (filter #(contains? % :fn-rv) fn-call-records)
 
@@ -33,12 +49,16 @@
         id-execution-order (tree/flatten-tree id-adjacency-list root-id)
 
         id-record-map (into {} (map #(vector (:id %) %) rv-records))]
+
     (printer (str "Time: " (Date.)))
-    (doseq [[id status level] id-execution-order]
-      (let [{:keys [fn-name fn-args fn-rv]} (get id-record-map id)]
-        (if (= status :start)
-          (printer (str (join (repeat level "|  ")) "Г--") fn-name fn-args)
-          (printer (str (join (repeat level "|  ")) "L--") fn-rv))))))
+    (let [{:keys [start only-start? end indent marker]} (parse-opts opts)
+          {s-marker :start e-marker :end} marker]
+      (doseq [[id status level] id-execution-order]
+        (let [record (get id-record-map id)]
+          (if (= status :start)
+            (apply printer (str (join (repeat level indent)) s-marker) (:fn-name record) (map record start))
+            (when-not only-start?
+              (apply printer (str (join (repeat level indent)) e-marker) (map record end)))))))))
 
 (defn print-to-file
   [file & args]
@@ -110,17 +130,16 @@
   (fn-find/get-vars regex))
 
 ;; Repl debug mode fns --------------------------------------------------------------
-
 (defn iprint
-  [vars f]
+  [vars f & [opts]]
   (let [{:keys [rv fn-call-records]} (capture/run (remove-inspector-fn-vars vars) f)]
-    (print-call-hierarchy println fn-call-records)
+    (print-call-hierarchy println opts fn-call-records)
     rv))
 
 (defn ispit
-  [file vars f]
+  [file vars f & opts]
   (let [{:keys [rv fn-call-records]} (capture/run (remove-inspector-fn-vars vars) f)]
-    (print-call-hierarchy (partial print-to-file file) fn-call-records)
+    (print-call-hierarchy (partial print-to-file file) opts fn-call-records)
     rv))
 
 ; tracked vars
