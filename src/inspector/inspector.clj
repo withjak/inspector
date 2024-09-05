@@ -137,7 +137,7 @@
     rv))
 
 (defn ispit
-  [file vars f & opts]
+  [file vars f & [opts]]
   (let [{:keys [rv fn-call-records]} (capture/run (remove-inspector-fn-vars vars) f)]
     (print-call-hierarchy (partial print-to-file file) opts fn-call-records)
     rv))
