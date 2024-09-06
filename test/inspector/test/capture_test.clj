@@ -22,17 +22,17 @@
         c-chains (map :c-chain fn-call-records)]
 
     (testing "count of records"
-      (is (= 10 (count fn-call-records)))
+      (is (= 5 (count fn-call-records)))
       (is (= 5 (count rv-records)))
       ; records are same before and after running function
-      (is (= (->> fn-call-records
-                  (filter (comp not :fn-rv))
-                  set)
-             (->> rv-records
-                  (map #(dissoc % :fn-rv :execution-time))
-                  set)))
+      #_(is (= (->> fn-call-records
+                    (filter (comp not :fn-rv))
+                    set)
+               (->> rv-records
+                    (map #(dissoc % :fn-rv :execution-time))
+                    set)))
       ; only these keys should be present
-      (is (= {[:fn-name :fn-args :id :tid :c-id :c-tid :c-chain :uuid]                        5
+      (is (= {#_[:fn-name :fn-args :id :tid :c-id :c-tid :c-chain :uuid] #_5
               [:tid :c-chain :fn-name :execution-time :id :fn-args :c-id :uuid :c-tid :fn-rv] 5}
              (->> fn-call-records
                   (map keys)
@@ -59,17 +59,17 @@
                 :fn-rv   [0 1]}})))
 
     (is (every? int? id-s))
-    (is (= {java.lang.Long 8 nil 2}
+    (is (= {java.lang.Long 4 nil 1}
            (-> (group-by type c-id-s)
                (update-vals count))))
-    (is (= {java.lang.Long 8
-            nil            2}
+    (is (= {java.lang.Long 4
+            nil            1}
            (-> (group-by type c-t-id-s)
                (update-vals count))))
     (is (every? int? t-id-s))
     (is (every? int? execution-time))
 
-    (testing "total records captured"
+    #_(testing "total records captured"
       (is (= (count fn-call-records) 10))
       (let [g (group-by #(contains? % :fn-rv) fn-call-records)]
         (is (=
@@ -93,27 +93,31 @@
     (let [s (get groups "inspector.test.capture-test/parallel")
           args (map :fn-args s)
           rv (map :fn-rv s)]
-      (is (= (count s) 2))
-      (is (= (frequencies args) {'(1) 2}))
-      (is (= (frequencies rv) {[0 1] 1 nil 1}))
+      (is (= (count s) 1))
+      (is (= (frequencies args) {'(1) 1}))
+      (is (= (frequencies rv) {[0 1] 1}))
       (doseq [{:keys [caller-thread-id t-id]} s]
         (is (= caller-thread-id t-id))))
 
     (let [s (get groups "inspector.test.capture-test/simple")
           args (map :fn-args s)
           rv (map :fn-rv s)]
-      (is (= (count s) 4))
-      (is (= (frequencies args) {'(0) 2 '(1) 2}))
-      (is (= (frequencies rv) {0 1 1 1 nil 2}))
+      (is (= (count s) 2))
+      (is (= (frequencies args) {'(0) 1
+                                 '(1) 1}))
+      (is (= (frequencies rv) {0 1
+                               1 1}))
       (doseq [{:keys [c-tid t-id]} s]
         (is (not= c-tid t-id))))
 
     (let [s (get groups "inspector.test.capture-test/simplest")
           args (map :fn-args s)
           rv (map :fn-rv s)]
-      (is (= (count s) 4))
-      (is (= (frequencies args) {'(0) 2 '(1) 2}))
-      (is (= (frequencies rv) {0 1 1 1 nil 2}))
+      (is (= (count s) 2))
+      (is (= (frequencies args) {'(0) 1
+                                 '(1) 1}))
+      (is (= (frequencies rv) {0 1
+                               1 1}))
       (doseq [{:keys [caller-thread-id t-id]} s]
         (is (= caller-thread-id t-id))))))
 

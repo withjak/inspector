@@ -10,7 +10,7 @@
 
 (defn stream-template
   [export-fn]
-  (core/create-template [utils/always (partial action export-fn)]
+  (core/create-template []
                         [utils/always (partial action export-fn)]))
 
 (defn start-streaming
