@@ -89,17 +89,17 @@
   [fn-vars template]
   (doseq [fn-var fn-vars]
     ; better, so that no nested templates
-    ; (when-not (or (:inspector-skip (meta fn-var)) (:inspector-original-value (meta fn-var)) ))
-    (when-not (:inspector-skip (meta fn-var))
+    ; (when-not (or (:i-skip (meta fn-var)) (:i-original-value (meta fn-var)) ))
+    (when-not (:i-skip (meta fn-var))
       ; attach the original value in meta, so it could be recovered if needed
-      (alter-meta! fn-var assoc :inspector-original-value (deref fn-var))
+      (alter-meta! fn-var assoc :i-original-value (deref fn-var))
       (alter-var-root fn-var (fn [fn-value] (template fn-value (meta fn-var)))))))
 
 (defn restore-original-value
   [fn-vars]
   (doseq [fn-var fn-vars]
-    (when-let [original-value (:inspector-original-value (meta fn-var))]
-      (alter-meta! fn-var dissoc :inspector-original-value)
+    (when-let [original-value (:i-original-value (meta fn-var))]
+      (alter-meta! fn-var dissoc :i-original-value)
       (alter-var-root fn-var (fn [_] original-value)))))
 
 (comment

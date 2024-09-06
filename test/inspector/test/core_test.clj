@@ -25,7 +25,7 @@
         old-meta-data (meta #'foo)]
     (core/attach-template-permanent fn-vars template)
     (let [new-meta-data (meta #'foo)]
-      (is (contains? new-meta-data :inspector-original-value)))))
+      (is (contains? new-meta-data :i-original-value)))))
 
 (deftest attach-template-permanent-fn-value-test
   (let [DATA (atom [])
@@ -45,11 +45,11 @@
         fn-vars #{#'foo}]
     (core/attach-template-permanent fn-vars template)
     (foo :a)
-    (is (contains? (meta #'foo) :inspector-original-value))
+    (is (contains? (meta #'foo) :i-original-value))
     (is (not= [] @DATA))
 
     (reset! DATA [])
     (core/restore-original-value fn-vars)
-    (is (= false (contains? (meta #'foo) :inspector-original-value)))
+    (is (= false (contains? (meta #'foo) :i-original-value)))
     (is (= [] @DATA))))
 

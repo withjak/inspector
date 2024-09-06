@@ -161,7 +161,7 @@ Start Streaming
 
 To skip modifying a function either remove it's var from `my-vars` or add metadata `:inspector-skip`.
 ```clojure
-(defn ^:inspector-skip foo
+(defn ^:i-skip foo
   [args]
   :body)
 ```
