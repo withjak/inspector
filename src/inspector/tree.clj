@@ -41,25 +41,4 @@
                 [node :end level])))]
     (partition 3 (flatten-tree node 0))))
 
-(defn find-path
-  "Returns path which is a list of nodes from root node to target node.
 
-  parent-pointer-tree:
-    mapping from child node to parent node
-    see: https://en.wikipedia.org/wiki/Parent_pointer_tree
-
-  (find-path {1 0
-              2 1
-              3 1
-              4 2
-              5 3}
-             5)
-  => (1 3 5)
-  "
-  [parent-pointer-tree target-node]
-  (loop [node target-node
-         path (list target-node)]
-    (let [parent (get parent-pointer-tree node)]
-      (if (zero? parent)
-        path
-        (recur parent (conj path parent))))))
