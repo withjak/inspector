@@ -20,6 +20,22 @@
         m))
     fn-call-records))
 
+(defn infer-execution-order
+  [fn-call-records]
+  (let [rv-records (->> (handle-nil-c-id fn-call-records)
+                        (filter #(contains? % :fn-rv)))
+
+        ; {1 [2 3], 2 [4], 3 [5]}
+        adjacency-list (-> (group-by :c-id rv-records)
+                           (update-vals #(map :id %)))
+        ; 1
+        root-id (first (get adjacency-list 0))
+        ; [[id status level] ...]
+        execution-order (tree/flatten-tree adjacency-list root-id)
+        record-map (->> (map #(vector (:id %) %) rv-records)
+                        (into {}))]
+    [execution-order record-map]))
+
 (defn parse-opts
   [{:keys [only-start?] :as opts}]
   (let [default {:start       [:fn-args]
@@ -38,27 +54,23 @@
 
 (defn print-call-hierarchy
   [printer opts fn-call-records]
-  (let [fn-call-records (handle-nil-c-id fn-call-records)
-        rv-records (filter #(contains? % :fn-rv) fn-call-records)
-
-        ; {1 [2 3], 2 [4], 3 [5]}
-        id-adjacency-list (update-vals (group-by :c-id rv-records) #(map :id %))
-        ; 1
-        root-id (first (get id-adjacency-list 0))
-        ; [[id status level] ...]
-        id-execution-order (tree/flatten-tree id-adjacency-list root-id)
-
-        id-record-map (into {} (map #(vector (:id %) %) rv-records))]
+  (let [[execution-order record-map] (infer-execution-order fn-call-records)]
 
     (printer (str "Time: " (Date.)))
-    (let [{:keys [start only-start? end indent marker]} (parse-opts opts)
-          {s-marker :start e-marker :end} marker]
-      (doseq [[id status level] id-execution-order]
-        (let [record (get id-record-map id)]
+    (let [{:keys [start end indent marker only-start?]} (parse-opts opts)]
+      (doseq [[id status level] execution-order]
+        (let [record (get record-map id)]
           (if (= status :start)
-            (apply printer (str (join (repeat level indent)) s-marker) (:fn-name record) (map record start))
+            (apply
+              printer
+              (-> (repeat level indent) join (str (:start marker)))
+              (:fn-name record)
+              (map record start))
             (when-not only-start?
-              (apply printer (str (join (repeat level indent)) e-marker) (map record end)))))))))
+              (apply
+                printer
+                (-> (repeat level indent) join (str (:end marker)))
+                (map record end)))))))))
 
 (defn print-to-file
   [file & args]
