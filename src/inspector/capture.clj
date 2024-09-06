@@ -21,7 +21,7 @@
                            {:rv (executor f)}
                            (catch Exception e
                              {:e e}))
-          fn-call-records @accumulator]
+          records @accumulator]
       (reset! accumulator [])
-      {:rv rv :e e :fn-call-records fn-call-records})))
+      {:rv rv :e e :records records})))
 

@@ -9,15 +9,15 @@
   (:import java.util.Date))
 
 (defn infer-execution-order
-  [rv-records]
+  [records]
   (let [; {1 [2 3], 2 [4], 3 [5]}
-        adjacency-list (-> (group-by :c-id rv-records)
+        adjacency-list (-> (group-by :c-id records)
                            (update-vals #(map :id %)))
         ; 1
         root-id (first (get adjacency-list nil))
         ; [[id status level] ...]
         execution-order (tree/flatten-tree adjacency-list root-id)
-        record-map (->> (map #(vector (:id %) %) rv-records)
+        record-map (->> (map #(vector (:id %) %) records)
                         (into {}))]
     [execution-order record-map]))
 
@@ -38,8 +38,8 @@
       (merge default opts))))
 
 (defn print-call-hierarchy
-  [printer opts fn-call-records]
-  (let [[execution-order record-map] (infer-execution-order fn-call-records)]
+  [printer opts records]
+  (let [[execution-order record-map] (infer-execution-order records)]
 
     (printer (str "Time: " (Date.)))
     (let [{:keys [start end indent marker only-start?]} (parse-opts opts)]
@@ -86,14 +86,14 @@
 ;; Repl debug mode fns --------------------------------------------------------------
 (defn iprint
   [vars f & [opts]]
-  (let [{:keys [rv fn-call-records]} (capture/run (remove-inspector-fn-vars vars) f)]
-    (print-call-hierarchy println opts fn-call-records)
+  (let [{:keys [rv records]} (capture/run (remove-inspector-fn-vars vars) f)]
+    (print-call-hierarchy println opts records)
     rv))
 
 (defn ispit
   [file vars f & [opts]]
-  (let [{:keys [rv fn-call-records]} (capture/run (remove-inspector-fn-vars vars) f)]
-    (print-call-hierarchy (partial print-to-file file) opts fn-call-records)
+  (let [{:keys [rv records]} (capture/run (remove-inspector-fn-vars vars) f)]
+    (print-call-hierarchy (partial print-to-file file) opts records)
     rv))
 
 ; export
@@ -102,11 +102,12 @@
   (capture/run (remove-inspector-fn-vars vars) f))
 
 (defn export
-  "Same as `export-raw` with stringify non primitive types present in.
+  "WIP
+  Same as `export-raw` with stringify non primitive types present in.
   In progress not complete yet"
   [vars f]
-  (let [{:keys [rv fn-call-records]} (capture/run (remove-inspector-fn-vars vars) f)]
-    {:rv rv :fn-call-records (utils/stringify-non-primitives fn-call-records)}))
+  (let [{:keys [rv records]} (capture/run (remove-inspector-fn-vars vars) f)]
+    {:rv rv :records (utils/stringify-non-primitives records)}))
 
 ;; Omnipresent debug mode fns --------------------------------------------------------------
 (defn stream-raw

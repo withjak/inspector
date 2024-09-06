@@ -11,21 +11,21 @@
 ; TODO: some times there are 4 threads ans sometimes 3. Check why is that happening.
 (deftest parallel-test
   (let [my-project-vars [#'simplest #'simple #'parallel]
-        {:keys [e rv fn-call-records]} (capture/run my-project-vars #(parallel 1))
-        groups (group-by :fn-name fn-call-records)
-        rv-records (filter :fn-rv fn-call-records)
+        {:keys [e rv records]} (capture/run my-project-vars #(parallel 1))
+        groups (group-by :fn-name records)
+        rv-records (filter :fn-rv records)
         execution-time (map :execution-time rv-records)
-        id-s (map :id fn-call-records)
-        c-id-s (map :c-id fn-call-records)
-        c-t-id-s (map :c-tid fn-call-records)
-        t-id-s (map :tid fn-call-records)
-        c-chains (map :c-chain fn-call-records)]
+        id-s (map :id records)
+        c-id-s (map :c-id records)
+        c-t-id-s (map :c-tid records)
+        t-id-s (map :tid records)
+        c-chains (map :c-chain records)]
 
     (testing "count of records"
-      (is (= 5 (count fn-call-records)))
+      (is (= 5 (count records)))
       (is (= 5 (count rv-records)))
       ; records are same before and after running function
-      #_(is (= (->> fn-call-records
+      #_(is (= (->> records
                     (filter (comp not :fn-rv))
                     set)
                (->> rv-records
@@ -34,7 +34,7 @@
       ; only these keys should be present
       (is (= {#_[:fn-name :fn-args :id :tid :c-id :c-tid :c-chain :uuid] #_5
               [:tid :c-chain :fn-name :execution-time :id :fn-args :c-id :uuid :c-tid :fn-rv] 5}
-             (->> fn-call-records
+             (->> records
                   (map keys)
                   frequencies))))
 
@@ -70,21 +70,21 @@
     (is (every? int? execution-time))
 
     #_(testing "total records captured"
-      (is (= (count fn-call-records) 10))
-      (let [g (group-by #(contains? % :fn-rv) fn-call-records)]
+      (is (= (count records) 10))
+      (let [g (group-by #(contains? % :fn-rv) records)]
         (is (=
               (count (get g true))
               (count (get g false))
-              (/ (count fn-call-records) 2)))))
+              (/ (count records) 2)))))
 
     (testing "number of unique threads created"
-      (is (= (->> fn-call-records
+      (is (= (->> records
                   (map :tid)
                   set
                   count)
              3))
       ; includes nil as well
-      (is (= (->> fn-call-records
+      (is (= (->> records
                   (map :c-tid)
                   set
                   count)
@@ -130,7 +130,7 @@
 
 (deftest stack-trace-is-usable-test
   (let [my-project-vars [#'simplest-fail #'simple-fail #'parallel-fail]
-        {:keys [e rv fn-call-records]} (capture/run my-project-vars #(parallel-fail 1))]
+        {:keys [e rv records]} (capture/run my-project-vars #(parallel-fail 1))]
     (is (not= nil e))
     (is (let [names (->> (Throwable->map e)
                          :trace
@@ -144,6 +144,6 @@
           ; TODO: why is inspector.test.capture_test$parallel_fail not showing up?
           ))
 
-    (let [groups (group-by :fn-name fn-call-records)
-          rv-records (filter #(contains? % :fn-rv) fn-call-records)]
+    (let [groups (group-by :fn-name records)
+          rv-records (filter #(contains? % :fn-rv) records)]
       (is (every? :e rv-records)))))
