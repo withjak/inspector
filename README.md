@@ -9,15 +9,15 @@ Inspector lets you see who is calling who (functions call hierarchy), with what 
 - [Features](#Features)
 - [Basic Usage](#Basic-Usage)
   - [Setup](#Setup)
-  - [Mode: normal](#Mode:-normal)
-  - [Mode: ominpresent](#Mode:-ominpresent)
+  - [Mode: normal](#Mode-normal)
+  - [Mode: ominpresent](#Mode-ominpresent)
   - [Note](#Note)
 - [Tinkering with normal mode](#Tinkering-with-normal-mode)
 - [Tinkering with omnipresent mode](#Tinkering-with-omnipresent-mode)
 - [Track specific fn/ns](#Track-specific-fn/ns)
-- [:i-skip metadata](#:i-skip-metadata)
-- [Want something else?](#Want-something-else?)
-- [How inspector works?](#How inspector works?)
+- [:i-skip metadata](#i-skip-metadata)
+- [Want something else?](#Want-something-else)
+- [How inspector works?](#How-inspector-works)
 
 ## Add dependency
 Leiningen
@@ -191,7 +191,7 @@ Example output from `inspector.test.capture-test`
 ## Tinkering with omnipresent mode
 ### Too much data?
 Then track only the functions / namespaces that you care about. <br>
-Check [usage](#Track0specific-fn/ns) of `get-vars` and [:i-skip metadata](#:i-skip-metadata)
+Check [usage](#Track0specific-fn/ns) of `get-vars` and [:i-skip metadata](#i-skip-metadata)
 
 ### using repl
 If you are connecting via repl to remote environment and trying out `i/stream-raw`, then you 
