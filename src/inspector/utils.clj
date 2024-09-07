@@ -36,10 +36,6 @@
   [meta-data]
   (str (:ns meta-data) "/" (:name meta-data)))
 
-(defn ^:condition always
-  [& _]
-  true)
-
 (defn prepare-fn-record
   [meta-data fn-args {:keys [c-tid tid c-id c-chain id uuid time e fn-rv] :as shared}]
   (merge
@@ -50,10 +46,10 @@
      :c-id    c-id
      :c-tid   c-tid
      :c-chain c-chain
-     :uuid    uuid}
-    (when time {:time time})
-    (when e {:e (Throwable->map e)})
-    (when (contains? shared :fn-rv) {:fn-rv fn-rv})))
+     :uuid    uuid
+     :time    time
+     :fn-rv   fn-rv}
+    (when e {:e (Throwable->map e)})))
 
 (defn walk-n-replace
   "Applies f to each non-collection thing.
