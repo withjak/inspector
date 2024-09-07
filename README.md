@@ -21,7 +21,7 @@
 - [Customization and Extensibility](#Customization-and-Extensibility)
 - [How Inspector Works](#How-Inspector-Works)
 
-## Installation
+## Add dependency
 Add the following dependency to your project:
 ### Leiningen
 ```clojure
