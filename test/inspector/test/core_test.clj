@@ -4,18 +4,16 @@
             [inspector.utils :as utils]))
 
 (deftest run-rules|share-working?-test
-  (let [c-t (fn [& _] true)
-        c-f (fn [& _] false)
-        a1 (fn [_meta-data _fn-args shared] shared)
+  (let [a1 (fn [_meta-data _fn-args shared] shared)
         a2 (fn [_meta-data _fn-args shared] (assoc shared :a2 2))
         a3 (fn [_meta-data _fn-args shared] (assoc shared :a3 3))
         a4 (fn [_meta-data _fn-args shared] (assoc shared :a4 4))
         a5 (fn [_meta-data _fn-args shared] shared)
-        rules [c-t a1 c-t a2 c-f a3 c-t a4 c-t a5]
+        actions [a1 a2 a3 a4 a5]
         meta-data {}
         fn-args []]
-    (is (= (core/run-rules rules meta-data fn-args {})
-           {:a2 2, :a4 4}))))
+    (is (= (core/run-actions actions meta-data fn-args {})
+           {:a2 2, :a3 3, :a4 4}))))
 
 (defn foo [a] a)
 
@@ -31,7 +29,7 @@
   (let [DATA (atom [])
         store-data (fn [_meta-data _fn-args shared]
                      (swap! DATA conj shared))
-        template (core/create-template [] [utils/always store-data])]
+        template (core/create-template [] [store-data])]
     (core/attach-template-permanent #{#'foo} template)
     (foo :a)
     ; modified that's why we were able to capture some data, like :time
@@ -41,7 +39,7 @@
   (let [DATA (atom [])
         store-data (fn [_meta-data _fn-args shared]
                      (swap! DATA conj shared))
-        template (core/create-template [] [utils/always store-data])
+        template (core/create-template [] [store-data])
         fn-vars #{#'foo}]
     (core/attach-template-permanent fn-vars template)
     (foo :a)

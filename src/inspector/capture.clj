@@ -11,7 +11,7 @@
   shared)
 
 (def capture-template
-  (core/create-template [] [utils/always action]))
+  (core/create-template [] [action]))
 
 (defn run
   [vars f]

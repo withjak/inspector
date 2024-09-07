@@ -1,13 +1,12 @@
 (ns inspector.core)
 
-(defn run-rules
+(defn run-actions
   "Executes action if condition evaluates to truthy value."
-  [rules meta-data fn-args shared]
-  (let [evaluate (fn [shared [condition action]]
-                   (if (condition meta-data fn-args shared)
-                     (action meta-data fn-args shared)      ;; action must return "shared" (a map)
-                     shared))]
-    (reduce evaluate shared (partition 2 rules))))
+  [actions meta-data fn-args shared]
+  (reduce
+    (fn [shared action]
+      (action meta-data fn-args shared)) ;; action must return "shared" (a map)
+    shared actions))
 
 (defn get-thread-id
   []
@@ -39,7 +38,7 @@
 
 (defn create-template
   "Attaches rules (i.e. condition action pairs) before and after execution of a function."
-  [before-rules after-rules]
+  [before-actions after-actions]
 
   ^{:doc "Return new value which replaces the original value pointed to by function's var"}
   (fn template
@@ -58,7 +57,7 @@
                                                                :id      (swap! id inc)}]
            ;; for fns that "f" calls, f's id will be their c-id
            (binding [*state* {:c-id id :c-tid tid :uuid uuid :c-chain (conj c-chain id)}]
-             (let [shared (run-rules before-rules meta-data args shared-state)
+             (let [shared (run-actions before-actions meta-data args shared-state)
                    start-time (nano-time)
                    {:keys [rv e]} (try
                                     {:rv (apply fn-value args)}
@@ -66,7 +65,7 @@
                                       {:e e}))
                    time (- (nano-time) start-time)
                    shared (assoc shared :time time :fn-rv rv :e e)]
-               (run-rules after-rules meta-data args shared)
+               (run-actions after-actions meta-data args shared)
                (if e
                  (throw e)
                  rv))))
