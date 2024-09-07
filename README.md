@@ -14,7 +14,7 @@ Inspector lets you see who is calling who (functions call hierarchy), with what 
   - [Note](#Note)
 - [Tinkering with normal mode](#Tinkering-with-normal-mode)
 - [Tinkering with omnipresent mode](#Tinkering-with-omnipresent-mode)
-- [Track specific fn/ns](#Track-specific-fn/ns)
+- [Track specific fn/ns](#Track-specific-fnns)
 - [:i-skip metadata](#i-skip-metadata)
 - [Want something else?](#Want-something-else)
 - [How inspector works?](#How-inspector-works)
