@@ -203,7 +203,13 @@ should restore vars to original value once you have completed collecting data.
 You can pick and choose which function you want to track using `get-vars` <br>
 `get-vars` returns a set of vars which will be modified. <br>
 Add or remove vars from this set depending on weather you want to track them or not. <br>
-This is true for both normal and omnipresent mode.
+This is true for both normal and omnipresent mode.<br>
+
+Note: <br>
+If function calls looks like `a -> b -> c` <br>
+and you are tracking fn `a` and `c` but not `b`. <br>
+Then you will still get the information that `a -> c`.
+
 
 ```clojure
 ; track all function defined in all namespaces whose string representation matches regex #"dummy.*"
