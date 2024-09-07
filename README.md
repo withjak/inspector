@@ -33,7 +33,6 @@ Add the following dependency to your project:
 org.clojars.akshay/inspector {:mvn/version "1.1.1-SNAPSHOT"}
 ```
 
----
 ## Features
 - **Minimal API**: `get-vars`, `iprint`, `ispit`, `stream-raw`.
 - **Fine-grained control**: Track specific functions and namespaces.
@@ -54,7 +53,7 @@ org.clojars.akshay/inspector {:mvn/version "1.1.1-SNAPSHOT"}
   - `:c-chain`: Call chain (vector of function ids).
   - `:uuid`:    All function calls resulting from a top-level function invocation have same uuid.
 
----
+
 ## Basic Usage
 
 ### Setup
@@ -104,12 +103,10 @@ To capture data continuously:
 (i/stream-raw tracked-vars export)
 ```
 
----
 ### Important Notes
 - **Normal Mode** (`iprint`, `ispit`): Use for targeted debugging of specific top level function.
 - **Omnipresent Mode** (`stream-raw`): Use for continuous data collection. When running **via repl** in a remote environment (staging/production), restore the environment as described in [Omnipresent Mode: REPL](#Omnipresent-Mode-REPL).
 
----
 
 ## Detailed Usage
 ### Normal Mode: Output
@@ -167,7 +164,6 @@ If you're tracking function calls in a remote environment via REPL by using `str
 (inspector.core/restore-original-value tracked-vars)
 ```
 
----
 ## Tracking Specific Functions or Namespaces
 Use `get-vars` (which returns a set) to collect vars from specific namespaces. Then pass them to `iprint`, `ispit`, or `stream-raw` to start tracking them.
 
@@ -187,7 +183,6 @@ Use `get-vars` (which returns a set) to collect vars from specific namespaces. T
 **Note**: <br>
 If the function call sequence is `a -> b -> c` and only `a` and `c` are being tracked, you'll still receive information showing `a -> c`.
 
----
 ## Skipping Function Tracking
 To skip tracking a specific function, you can either remove its var from tracked-vars or add :`i-skip` metadata:
 ```clojure
@@ -196,12 +191,10 @@ To skip tracking a specific function, you can either remove its var from tracked
   ...)
 ```
 
----
 ## Customization and Extensibility
 Inspector allows you to run custom code before and after execution of every tracked function. <br>
 TODO: add more details here.
 
----
 ## How Inspector Works
 In clojure a function's name is a `symbol`.
 The `symbol` maps to a `var` which has a reference to `value`.
