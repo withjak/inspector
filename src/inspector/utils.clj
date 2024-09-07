@@ -41,7 +41,7 @@
   true)
 
 (defn prepare-fn-record
-  [meta-data fn-args {:keys [c-tid tid c-id c-chain id uuid execution-time e fn-rv] :as shared}]
+  [meta-data fn-args {:keys [c-tid tid c-id c-chain id uuid time e fn-rv] :as shared}]
   (merge
     {:fn-name (full-name meta-data)
      :fn-args fn-args
@@ -51,7 +51,7 @@
      :c-tid   c-tid
      :c-chain c-chain
      :uuid    uuid}
-    (when execution-time {:execution-time execution-time})
+    (when time {:time time})
     (when e {:e (Throwable->map e)})
     (when (contains? shared :fn-rv) {:fn-rv fn-rv})))
 

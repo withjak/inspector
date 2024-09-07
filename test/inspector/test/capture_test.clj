@@ -14,7 +14,7 @@
         {:keys [e rv records]} (capture/run my-project-vars #(parallel 1))
         groups (group-by :fn-name records)
         rv-records (filter :fn-rv records)
-        execution-time (map :execution-time rv-records)
+        time (map :time rv-records)
         id-s (map :id records)
         c-id-s (map :c-id records)
         c-t-id-s (map :c-tid records)
@@ -29,11 +29,11 @@
                     (filter (comp not :fn-rv))
                     set)
                (->> rv-records
-                    (map #(dissoc % :fn-rv :execution-time))
+                    (map #(dissoc % :fn-rv :time))
                     set)))
       ; only these keys should be present
       (is (= {#_[:fn-name :fn-args :id :tid :c-id :c-tid :c-chain :uuid] #_5
-              [:tid :c-chain :fn-name :execution-time :id :fn-args :c-id :uuid :c-tid :fn-rv] 5}
+              [:tid :c-chain :time :fn-name :id :fn-args :c-id :uuid :c-tid :fn-rv] 5}
              (->> records
                   (map keys)
                   frequencies))))
@@ -67,7 +67,7 @@
            (-> (group-by type c-t-id-s)
                (update-vals count))))
     (is (every? int? t-id-s))
-    (is (every? int? execution-time))
+    (is (every? int? time))
 
     #_(testing "total records captured"
       (is (= (count records) 10))
@@ -120,7 +120,6 @@
                                1 1}))
       (doseq [{:keys [caller-thread-id t-id]} s]
         (is (= caller-thread-id t-id))))))
-
 
 (defn simplest-fail [i] (/ i 0))
 

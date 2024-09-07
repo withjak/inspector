@@ -64,8 +64,8 @@
                                     {:rv (apply fn-value args)}
                                     (catch Exception e
                                       {:e e}))
-                   execution-time (- (nano-time) start-time)
-                   shared (assoc shared :execution-time execution-time :fn-rv rv :e e)]
+                   time (- (nano-time) start-time)
+                   shared (assoc shared :time time :fn-rv rv :e e)]
                (run-rules after-rules meta-data args shared)
                (if e
                  (throw e)
@@ -89,6 +89,7 @@
   [fn-vars template]
   (doseq [fn-var fn-vars]
     ; better, so that no nested templates
+    ; but seems like there is a bug here or in the test
     ; (when-not (or (:i-skip (meta fn-var)) (:i-original-value (meta fn-var)) ))
     (when-not (:i-skip (meta fn-var))
       ; attach the original value in meta, so it could be recovered if needed

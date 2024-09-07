@@ -34,8 +34,8 @@
         template (core/create-template [] [utils/always store-data])]
     (core/attach-template-permanent #{#'foo} template)
     (foo :a)
-    ; modified that's why we were able to capture some data, like :execution-time
-    (is (contains? (first @DATA) :execution-time))))
+    ; modified that's why we were able to capture some data, like :time
+    (is (contains? (first @DATA) :time))))
 
 (deftest restore-original-value-test
   (let [DATA (atom [])
