@@ -40,10 +40,10 @@ org.clojars.akshay/inspector {:mvn/version "1.1.1-SNAPSHOT"}
   - omnipresent: capture data for all functions, across all threads, all the time. `stream-raw`
 - For every function call you have access to:
   - `:fn-name` namespace qualified name.
+  - `:time`    time duration (nanosecond) taken by function to execute.
   - `:fn-args` arguments.
   - `:fn-rv`   return value.
   - `:e`       error (returned only if an error occur).
-  - `:time`    time duration (nanosecond) taken by function to execute.
   - `:id`      uniquely identifies each function call.
   - `:tid`     thread id.
   - `:c-id`    caller's id.
