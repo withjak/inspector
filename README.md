@@ -190,7 +190,7 @@ Example output from `inspector.test.capture-test`
 ## Omnipresent mode and repl
 ### Too much data?
 Then track only the functions / namespaces that you care about. <br>
-Check [usage](#Track0specific-fn/ns) of `get-vars` and [:i-skip metadata](#i-skip-metadata)
+Check [usage](#Track-specific-fnns) of `get-vars` and [:i-skip metadata](#i-skip-metadata)
 
 ### using repl
 If you are connecting via repl to remote environment and trying out `i/stream-raw`, then you 
