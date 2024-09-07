@@ -9,11 +9,12 @@ Inspector lets you see who is calling who (functions call hierarchy), with what 
 - [Features](#Features)
 - [Basic Usage](#Basic-Usage)
   - [Setup](#Setup)
-  - [Mode: normal](#Mode-normal)
-  - [Mode: ominpresent](#Mode-ominpresent)
+  - [Normal mode](#Normal-mode)
+  - [Omnipresent mode](#Omnipresent-mode)
   - [Note](#Note)
-- [Tinkering with normal mode](#Tinkering-with-normal-mode)
-- [Tinkering with omnipresent mode](#Tinkering-with-omnipresent-mode)
+- [Normal mode and output](#Normal-mode-and-output)
+- [Normal mode and raw data](#Normal-mode-and-raw-data)
+- [Omnipresent mode and repl](#Omnipresent-mode-and-repl)
 - [Track specific fn/ns](#Track-specific-fnns)
 - [:i-skip metadata](#i-skip-metadata)
 - [Want something else?](#Want-something-else)
@@ -66,7 +67,7 @@ org.clojars.akshay/inspector {:mvn/version "1.1.1-SNAPSHOT"}
 (def my-vars (i/get-vars #"your-code-base.*"))
 ```
 
-### Mode: normal
+### Normal mode
 ```clojure
 "iprint, ispit: prints or spits, output of a function call (and all the functions that it call), in a visually comprehensible manner"
 
@@ -90,7 +91,7 @@ Time: Tue Jan 23 16:28:30 IST 2024
 L-- [0 1] <-- return value
 ```
 
-### Mode: ominpresent
+### Omnipresent mode
 ```clojure
 (defn export-fn 
   [{:keys [:fn-name :fn-args :fn-rv :e :time :id :tid :c-id :c-tid :c-chain :uuid]} :as record]
@@ -107,14 +108,12 @@ Normal mode:
 - i.e. `iprint` and `ispit`
 - use it when you are focused on a single function (and any functions it might call).
 
-mode: 
+Omnipresent mode: 
 - i.e. `stream-raw`
 - use it when you want to collect data on execution of all the functions.
 - when calling `stream-raw` using repl in any remote environment (staging/production), <br> make sure to restore the environment as mentioned in [using repl](#using-repl)
 
-## Tinkering with normal mode
-
-### change the output of iprint/ispit
+### Normal mode and output
 `iprint` and `ispit` take optional `opts`. check `i/parse-opts` to see all possible options.
 ```clojure
 ; Default output of iprint looks like this
@@ -162,7 +161,7 @@ L-- time fn-rv
    --> fn-name time fn-rv
 ```
 
-### Get raw data
+## Normal mode and raw data
 ```clojure
 ; rv is return value of (my-fn arg1 arg2 argn)
 (let [{:keys [e rv records]} (i/export-raw my-vars #(my-fn arg1 arg2 argn)] 
@@ -188,7 +187,7 @@ Example output from `inspector.test.capture-test`
 ; :c-chain -> vector of `:id`. {:id 5 :c-chain [1 2 3 4]} => that :if 5 was called by 4 and 4 was called 3 and so on.
 ```
 
-## Tinkering with omnipresent mode
+## Omnipresent mode and repl
 ### Too much data?
 Then track only the functions / namespaces that you care about. <br>
 Check [usage](#Track0specific-fn/ns) of `get-vars` and [:i-skip metadata](#i-skip-metadata)
