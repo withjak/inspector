@@ -37,7 +37,7 @@
   (. System (nanoTime)))
 
 (defn create-template
-  "Attaches rules (i.e. condition action pairs) before and after execution of a function."
+  "Attaches actions before and after execution of a function."
   [before-actions after-actions]
 
   ^{:doc "Return new value which replaces the original value pointed to by function's var"}
