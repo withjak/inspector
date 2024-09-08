@@ -25,12 +25,12 @@
 Add the following dependency to your project:
 ### Leiningen
 ```clojure
-[org.clojars.akshay/inspector "1.1.1-SNAPSHOT"]
+[org.clojars.akshay/inspector "1.1.1"]
 ```
 
 ### Clojure CLI/deps.edn
 ```clojure
-org.clojars.akshay/inspector {:mvn/version "1.1.1-SNAPSHOT"}
+org.clojars.akshay/inspector {:mvn/version "1.1.1"}
 ```
 
 ## Features
