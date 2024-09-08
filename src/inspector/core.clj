@@ -1,13 +1,12 @@
 (ns inspector.core)
 
-(defn run-rules
+(defn run-actions
   "Executes action if condition evaluates to truthy value."
-  [rules meta-data fn-args shared]
-  (let [evaluate (fn [shared [condition action]]
-                   (if (condition meta-data fn-args shared)
-                     (action meta-data fn-args shared)      ;; action must return "shared" (a map)
-                     shared))]
-    (reduce evaluate shared (partition 2 rules))))
+  [actions meta-data fn-args shared]
+  (reduce
+    (fn [shared action]
+      (action meta-data fn-args shared)) ;; action must return "shared" (a map)
+    shared actions))
 
 (defn get-thread-id
   []
@@ -38,8 +37,8 @@
   (. System (nanoTime)))
 
 (defn create-template
-  "Attaches rules (i.e. condition action pairs) before and after execution of a function."
-  [before-rules after-rules]
+  "Attaches actions before and after execution of a function."
+  [before-actions after-actions]
 
   ^{:doc "Return new value which replaces the original value pointed to by function's var"}
   (fn template
@@ -58,15 +57,15 @@
                                                                :id      (swap! id inc)}]
            ;; for fns that "f" calls, f's id will be their c-id
            (binding [*state* {:c-id id :c-tid tid :uuid uuid :c-chain (conj c-chain id)}]
-             (let [shared (run-rules before-rules meta-data args shared-state)
+             (let [shared (run-actions before-actions meta-data args shared-state)
                    start-time (nano-time)
                    {:keys [rv e]} (try
                                     {:rv (apply fn-value args)}
                                     (catch Exception e
                                       {:e e}))
-                   execution-time (- (nano-time) start-time)
-                   shared (assoc shared :execution-time execution-time :fn-rv rv :e e)]
-               (run-rules after-rules meta-data args shared)
+                   time (- (nano-time) start-time)
+                   shared (assoc shared :time time :fn-rv rv :e e)]
+               (run-actions after-actions meta-data args shared)
                (if e
                  (throw e)
                  rv))))
@@ -89,17 +88,18 @@
   [fn-vars template]
   (doseq [fn-var fn-vars]
     ; better, so that no nested templates
-    ; (when-not (or (:inspector-skip (meta fn-var)) (:inspector-original-value (meta fn-var)) ))
-    (when-not (:inspector-skip (meta fn-var))
+    ; but seems like there is a bug here or in the test
+    ; (when-not (or (:i-skip (meta fn-var)) (:i-original-value (meta fn-var)) ))
+    (when-not (:i-skip (meta fn-var))
       ; attach the original value in meta, so it could be recovered if needed
-      (alter-meta! fn-var assoc :inspector-original-value (deref fn-var))
+      (alter-meta! fn-var assoc :i-original-value (deref fn-var))
       (alter-var-root fn-var (fn [fn-value] (template fn-value (meta fn-var)))))))
 
 (defn restore-original-value
   [fn-vars]
   (doseq [fn-var fn-vars]
-    (when-let [original-value (:inspector-original-value (meta fn-var))]
-      (alter-meta! fn-var dissoc :inspector-original-value)
+    (when-let [original-value (:i-original-value (meta fn-var))]
+      (alter-meta! fn-var dissoc :i-original-value)
       (alter-var-root fn-var (fn [_] original-value)))))
 
 (comment

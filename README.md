@@ -2,60 +2,83 @@
 
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.akshay/inspector.svg?include_prereleases)](https://clojars.org/org.clojars.akshay/inspector)
 
-See what your functions are doing.
+**Inspector** is a tool for profiling, debugging, and visualizing function call hierarchies in Clojure applications. It provides insights into who is calling whom, with what arguments, what was returned, execution time, and more.
 
-## Install
-Check https://clojars.org/org.clojars.akshay/inspector
+# Table of Contents
+- [Add dependency](#Add-dependency)
+- [Features](#Features)
+- [Basic Usage](#Basic-Usage)
+  - [Setup](#Setup)
+  - [Normal mode](#Normal-mode)
+  - [Omnipresent mode](#Omnipresent-mode)
+  - [Important Notes](#Important-Notes)
+- [Detailed Usage](#Detailed-Usage)
+  - [Normal Mode: Output](#Normal-Mode-Output)
+  - [Normal Mode: Raw Data](#Normal-Mode-Raw-Data)
+  - [Omnipresent Mode: REPL](#Omnipresent-Mode-REPL)
+- [Tracking Specific Functions or Namespaces](#Tracking-Specific-Functions-or-Namespaces)
+- [Skipping Function Tracking](#Skipping-Function-Tracking)
+- [Customization and Extensibility](#Customization-and-Extensibility)
+- [How Inspector Works](#How-Inspector-Works)
+
+## Add dependency
+Add the following dependency to your project:
+### Leiningen
+```clojure
+[org.clojars.akshay/inspector "1.1.1-SNAPSHOT"]
+```
+
+### Clojure CLI/deps.edn
+```clojure
+org.clojars.akshay/inspector {:mvn/version "1.1.1-SNAPSHOT"}
+```
 
 ## Features
-- Export data when a function executes. Exports: 
-  - `:fn-name` namespace qualified name
-  - `:fn-args` arguments
-  - `:id`      uniquely identifies each function call
-  - `:tid`     thread id
-  - `:c-id`    caller functions id
-  - `:c-tid`   caller functions thread id
-  - `:c-chain` vector of function calls (ids) which eventually lead to call to current fn
-  - `:uuid`
-  - `:execution-time` time duration (nano second) taken by function to execute
-  - `:e` error
-  - `:fn-rv` return value
-- Thread safe
-- Error handling
-- Modes
-  - Repl debug
-  - Omnipresent debug: capture data for all<sup>*</sup> functions, across all threads, all the time
+- **Minimal API**: `get-vars`, `iprint`, `ispit`, `stream-raw`.
+- **Fine-grained control**: Track specific functions and namespaces.
+- **Low performance overhead**.
+- **Multiple Modes**:
+  - **Normal Mode**: Get human-readable output for specific function calls. (`iprint`, `ispit`)
+  - **Omnipresent Mode**: Continuously capture function calls across all threads. (`stream-raw`)
+- **Detailed Insights for Each Function Call**:
+  - `:fn-name`: Namespace-qualified function name.
+  - `:time`:    Execution time (in nanoseconds).
+  - `:fn-args`: Arguments passed.
+  - `:fn-rv`:   Return value.
+  - `:e`:       Errors (if any).
+  - `:id`:      Unique ID for the function call.
+  - `:tid`:     Thread ID.
+  - `:c-id`:    Caller’s ID.
+  - `:c-tid`:   Caller’s thread ID.
+  - `:c-chain`: Call chain (vector of function ids).
+  - `:uuid`:    All function calls resulting from a top-level function invocation have same uuid.
+
 
 ## Basic Usage
 
 ### Setup
-
+Start by requiring the necessary namespace:
 ```clojure
 (require '[inspector.inspector :as i])
-
-; i/get-vars returns a set of all vars which corresponds to functions
-; defined in all namespaces, which matches provided regex #"your-code-base.*"
-(def my-vars
-   ; Generally you would want to track all functions that you have defined.
-   (i/get-vars #"your-code-base.*"))
 ```
-
-### REPL debug
-
-#### Visualizing all function calls
+Next, define the functions you want to track using get-vars:
 ```clojure
-; visualizing all the function being called by (my-fn arg1 arg2 argn)
-; print to std-out
-(i/iprint my-vars #(my-fn arg1 arg2 argn))
+(def tracked-vars (i/get-vars #"project-prefix.*"))
+```
 
-; write to a file instead
-(i/ispit "/tmp/hierarchy.log" my-vars #(my-fn arg1 arg2 argn))
+### Normal mode
+To capture function calls in a readable format, use:
+```clojure
+(i/iprint tracked-vars #(my-fn arg1 arg2 argn))
 ```
-##### Example output
-From `inspector.test.inspector-test`
+Or, write the output to a file:
+```clojure
+(i/ispit "/tmp/hierarchy.log" tracked-vars #(my-fn arg1 arg2 argn))
 ```
+Example output from `inspector.test.inspector-test`:
+```roomsql
 Time: Tue Jan 23 16:28:30 IST 2024
-Г-- inspector.test.inspector-test/parallel (1)
+Г-- inspector.test.inspector-test/parallel (1) <-- arguments
 |  Г-- inspector.test.inspector-test/simple (0)
 |  |  Г-- inspector.test.inspector-test/simplest (0)
 |  |  L-- 0
@@ -64,136 +87,127 @@ Time: Tue Jan 23 16:28:30 IST 2024
 |  |  Г-- inspector.test.inspector-test/simplest (1)
 |  |  L-- 1
 |  L-- 1
-L-- [0 1]
-
-Note:
-1 is an argument.
-Г-- inspector.test.inspector-test/parallel (1)
-.
-.
-.
-L-- [0 1]
-[0 1] is thre return value on calling (parallel 1)
+L-- [0 1] <-- return value
 ```
 
-#### Show calls to database
+### Omnipresent mode
+To capture data continuously:
 ```clojure
-; Calling you function to see if its performing any CRUD operations in mongodb (or any other library/libraries)
-(i/iprint-tracked 
-   (i/get-vars #"mongodb.*")  ; Track all functions defined in mongodb library
-   my-vars
-   #(my-fn arg1 arg2 argn))
-
-; you can write to file instead
-(i/ispit-tracked
-   (i/get-vars #"mongodb.*") 
-   my-vars
-   #(my-fn arg1 arg2 argn))
+(defn export 
+  [{:keys [:fn-name :fn-args :fn-rv :e :time :id :tid :c-id :c-tid :c-chain :uuid]} :as record]
+  ;; Handle the captured data (e.g., log it, send to a database, etc.)
+  (clojure.tools.logging/info (dissoc record :fn-args :fn-rv)))
+  
+;; export will be called every time a function execution completes
+;; place it somewhere near the top of -main function
+(i/stream-raw tracked-vars export)
 ```
 
-##### Example output 
-From `inspector.test.inspector-test`
-```
-Time: Tue Jan 23 17:32:22 IST 2024
-♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ 
-call-chain: ["inspector.test.inspector-test/parallel" "inspector.test.inspector-test/simple" "inspector.test.inspector-test/simplest"]
-name: inspector.test.inspector-test/simplest
-args: (1)
-rv: 1
-♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ ♤ ♧ ♡ ♢ 
-call-chain: ["inspector.test.inspector-test/parallel" "inspector.test.inspector-test/simple" "inspector.test.inspector-test/simplest"]
-name: inspector.test.inspector-test/simplest
-args: (0)
-rv: 0
+### Important Notes
+- **Normal Mode** (`iprint`, `ispit`): Use for targeted debugging of specific top level function.
+- **Omnipresent Mode** (`stream-raw`): Use for continuous data collection. When running **via repl** in a remote environment (staging/production), restore the environment as described in [Omnipresent Mode: REPL](#Omnipresent-Mode-REPL).
 
-Note: 
-call-chain: shows the order in which different functions were called which finally resulted in call to a tracked fn.
+
+## Detailed Usage
+### Normal Mode: Output
+Customize the output of `iprint` and `ispit` using options.
+```clojure 
+(i/iprint tracked-vars #(my-fn arg1 arg2) {:start [:time :fn-args]})
+```
+Output:
+```roomsql
+Г-- fn-name time fn-args
+|  Г-- fn-name time fn-args
+|  |  Г-- fn-name time fn-args
+|  |  L-- fn-rv
+|  L-- fn-rv
+|  Г-- fn-name time fn-args
+|  L-- fn-rv
+L-- fn-rv
 ```
 
-#### Get raw data
+Another example
+```clojure 
+(i/iprint tracked-vars #(my-fn arg1 arg2) {:start-only? true 
+                                           :start [:time :fn-rv]})
+```
+Output:
+```roomsql
+--> fn-name time fn-rv
+   --> fn-name time fn-rv
+      --> fn-name time fn-rv
+   --> fn-name time fn-rv
+```
+You can further tweak the output by providing different options to control indentation, markers, and more.
+Check `i/parse-opts` to see all possible options.
+
+### Normal Mode: Raw Data
+Get raw data for advanced processing:
 ```clojure
 ; rv is return value of (my-fn arg1 arg2 argn)
-(let [{:keys [e rv fn-call-records]} (i/export-raw my-vars #(my-fn arg1 arg2 argn)]
-   fn-call-records)
+(let [{:keys [e rv records]} (i/export-raw tracked-vars #(my-fn arg1 arg2 argn)] 
+  records)
 ```
 
-##### Example output 
-From `inspector.test.capture-test`
+Example output from `inspector.test.capture-test`:
 ```clojure
-; fn-call-records
-[{:c-chain []    :id 1 :c-id nil :fn-name "inspector.test.capture-test/parallel" :fn-args (1) :tid 34 :c-tid nil :uuid #uuid "4c3bf13a-7899-4202-ade6-cfa0dfc3955e"}
- {:c-chain [1]   :id 2 :c-id 1   :fn-name "inspector.test.capture-test/simple"   :fn-args (0) :tid 30 :c-tid 34  :uuid #uuid "4c3bf13a-7899-4202-ade6-cfa0dfc3955e"}
- {:c-chain [1 2] :id 4 :c-id 2   :fn-name "inspector.test.capture-test/simplest" :fn-args (0) :tid 30 :c-tid 30  :uuid #uuid "4c3bf13a-7899-4202-ade6-cfa0dfc3955e"}
- {:c-chain [1]   :id 3 :c-id 1   :fn-name "inspector.test.capture-test/simple"   :fn-args (1) :tid 29 :c-tid 34  :uuid #uuid "4c3bf13a-7899-4202-ade6-cfa0dfc3955e"}
- {:c-chain [1 2] :id 4 :c-id 2   :fn-name "inspector.test.capture-test/simplest" :fn-args (0) :tid 30 :c-tid 30  :uuid #uuid "4c3bf13a-7899-4202-ade6-cfa0dfc3955e" :execution-time 6584   :fn-rv 0}
- {:c-chain [1 3] :id 5 :c-id 3   :fn-name "inspector.test.capture-test/simplest" :fn-args (1) :tid 29 :c-tid 29  :uuid #uuid "4c3bf13a-7899-4202-ade6-cfa0dfc3955e"}
- {:c-chain [1]   :id 2 :c-id 1   :fn-name "inspector.test.capture-test/simple"   :fn-args (0) :tid 30 :c-tid 34  :uuid #uuid "4c3bf13a-7899-4202-ade6-cfa0dfc3955e" :execution-time 49583  :fn-rv 0}
- {:c-chain [1 3] :id 5 :c-id 3   :fn-name "inspector.test.capture-test/simplest" :fn-args (1) :tid 29 :c-tid 29  :uuid #uuid "4c3bf13a-7899-4202-ade6-cfa0dfc3955e" :execution-time 1625   :fn-rv 1}
- {:c-chain [1]   :id 3 :c-id 1   :fn-name "inspector.test.capture-test/simple"   :fn-args (1) :tid 29 :c-tid 34  :uuid #uuid "4c3bf13a-7899-4202-ade6-cfa0dfc3955e" :execution-time 42625  :fn-rv 1}
- {:c-chain []    :id 1 :c-id nil :fn-name "inspector.test.capture-test/parallel" :fn-args (1) :tid 34 :c-tid nil :uuid #uuid "4c3bf13a-7899-4202-ade6-cfa0dfc3955e" :execution-time 431833 :fn-rv [0 1]}]
-
-; :fn-rv -> return value. Always check :e when :fn-rv is nil
-; :e -> will only be present in case an error was raised. In this case :fn-rv will be set as nil.
-; :id -> a unique identifier for each function call.
-;        if a function is called twice with exact same arguments the both calls will have different id's assigned to them.
-; :c-id -> is the id of the caller function. 
-;          c-id = nil implies caller is unknown. 
-;          Either because caller function is not modified (bcoz its not part of my-project-vars),
-;          Or caller function value if directly being called. Example in case of most handler fns.
-; :c-chain -> vector of `:id`. {:id 5 :c-chain [1 2 3 4]} => that :if 5 was called by 4 and 4 was called 3 and so on.
-; :uuid -> unique id to identify all the fns (even if some of them ran in different threads) which ran because of call to a top level function.
-;          useful when using Omnipresent debug mode.
+[{:c-chain [1 2] :id 4 :c-id 2   :fn-name "inspector.test.capture-test/simplest" :fn-args (0) :tid 30 :c-tid 30  :uuid #uuid "4c3bf13a-7899-4202-ade6-cfa0dfc3955e" :time 6584   :fn-rv 0}
+ {:c-chain [1]   :id 2 :c-id 1   :fn-name "inspector.test.capture-test/simple"   :fn-args (0) :tid 30 :c-tid 34  :uuid #uuid "4c3bf13a-7899-4202-ade6-cfa0dfc3955e" :time 49583  :fn-rv 0}
+ {:c-chain [1 3] :id 5 :c-id 3   :fn-name "inspector.test.capture-test/simplest" :fn-args (1) :tid 29 :c-tid 29  :uuid #uuid "4c3bf13a-7899-4202-ade6-cfa0dfc3955e" :time 1625   :fn-rv 1}
+ {:c-chain [1]   :id 3 :c-id 1   :fn-name "inspector.test.capture-test/simple"   :fn-args (1) :tid 29 :c-tid 34  :uuid #uuid "4c3bf13a-7899-4202-ade6-cfa0dfc3955e" :time 42625  :fn-rv 1}
+ {:c-chain []    :id 1 :c-id nil :fn-name "inspector.test.capture-test/parallel" :fn-args (1) :tid 34 :c-tid nil :uuid #uuid "4c3bf13a-7899-4202-ade6-cfa0dfc3955e" :time 431833 :fn-rv [0 1]}]
 ```
 
-### Ominpresent debug
-
-Start Streaming
+### Omnipresent Mode: REPL
+If you're tracking function calls in a remote environment via REPL by using `stream-raw`, make sure to restore the original function definitions once done:
 ```clojure
-(defn export-fn 
-  [{:keys [:fn-name :fn-args :fn-rv :id :tid :c-id :c-tid :c-chain :uuid :execution-time :e] :as data}]
-  ; send to elasticsearch
-  ; or log it
-  )
-  
-; export-fn will be called every time a function execution completes
-(i/stream-raw my-vars export-fn)
+(inspector.core/restore-original-value tracked-vars)
 ```
 
-To skip modifying a function either remove it's var from `my-vars` or add metadata `:inspector-skip`.
+## Tracking Specific Functions or Namespaces
+Use `get-vars` (which returns a set) to collect vars from specific namespaces. Then pass them to `iprint`, `ispit`, or `stream-raw` to start tracking them.
+
 ```clojure
-(defn ^:inspector-skip foo
+(i/get-vars #"project-prefix.*")                ; set of all functions from all namespaces.
+
+(i/get-vars #"project-prefix.c")                ; set of all functions from project-prefix.c namespace
+
+(clojure.set/difference                         ; set of all functions except those defined in project-prefix.c namespace
+  (i/get-vars #"project-prefix.*")  
+  (i/get-vars #"project-prefix.c"))
+
+(set/difference                                 ; set of all functions except function project-prefix.c/c-2
+  (i/get-vars #"project-prefix.*") 
+  #{#'dummy.c/c-2})
+```
+**Note**: <br>
+If the function call sequence is `a -> b -> c` and only `a` and `c` are being tracked, you'll still receive information showing `a -> c`.
+
+## Skipping Function Tracking
+To skip tracking a specific function, you can either remove its var from tracked-vars or add :`i-skip` metadata:
+```clojure
+(defn ^:i-skip foo
   [args]
-  :body)
+  ...)
 ```
 
-Restore vars to original value
-```clojure
-(inspector.core/restore-original-value my-vars)
-```
+## Customization and Extensibility
+Inspector allows you to run custom code before and after execution of every tracked function. <br>
+TODO: add more details here.
 
-
-
-## How inspector work?
-
+## How Inspector Works
 In clojure a function's name is a `symbol`.
 The `symbol` maps to a `var` which has a reference to `value`.
 Think of `value` as the actual function which will run when you do `(function-name arg1 arg2)`.
-<img src="./resources/original_function.png">
+<img src="./resources/original_function.png" width="500">
 <br>
 <br>
 The idea is to change the reference present in `var` to point to a `new value` (or new function).
 This `new value` (or new function) will wrap the original `value` (or function) with additional code.
-<img src="./resources/modified_function.png">
+<img src="./resources/modified_function.png" width="500">
 <br>
 <br>
 Inspector provides a structured way to modify a lot of `values`(functions) at once in this way.
-
-## Todo
-- finally standardise public api
-- refactor `capture.clj` to use `stream.clj`
-- complete tests
-- function to stringify function arguments, such as atom, object, ...
-- simplify `inspector.inspector` for printing call hierarchy
 
 ## License
 

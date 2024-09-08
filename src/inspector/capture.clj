@@ -11,7 +11,7 @@
   shared)
 
 (def capture-template
-  (core/create-template [utils/always action] [utils/always action]))
+  (core/create-template [] [action]))
 
 (defn run
   [vars f]
@@ -21,7 +21,7 @@
                            {:rv (executor f)}
                            (catch Exception e
                              {:e e}))
-          fn-call-records @accumulator]
+          records @accumulator]
       (reset! accumulator [])
-      {:rv rv :e e :fn-call-records fn-call-records})))
+      {:rv rv :e e :records records})))
 

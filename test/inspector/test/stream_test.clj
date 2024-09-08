@@ -30,32 +30,32 @@
 
 (deftest stream-from-single-thread-test
   (nested 1)
-  (is (= 6 (count @STREAMED-DATA)))
+  (is (= 3 (count @STREAMED-DATA)))
 
   (let [freq (-> (map :t-id @STREAMED-DATA)
                  frequencies)]
     (is (= 1 (count freq)))
-    (is (= 6 (first (vals freq)))))
+    (is (= 3 (first (vals freq)))))
 
   (let [freq (-> (map :fn-name @STREAMED-DATA)
                  frequencies)]
-    (is (= {"inspector.test.stream-test/nested"   2
-            "inspector.test.stream-test/simple"   2
-            "inspector.test.stream-test/simplest" 2} freq))))
+    (is (= {"inspector.test.stream-test/nested"   1
+            "inspector.test.stream-test/simple"   1
+            "inspector.test.stream-test/simplest" 1} freq))))
 
 (deftest stream-from-single-thread-exception-test
   (is (thrown? ArithmeticException
                (nested-fail 1)))
-  (is (= 6 (count @STREAMED-DATA)))
+  (is (= 3 (count @STREAMED-DATA)))
 
   (let [freq (-> (map :t-id @STREAMED-DATA)
                  frequencies)]
     (is (= 1 (count freq)))
-    (is (= 6 (first (vals freq)))))
+    (is (= 3 (first (vals freq)))))
 
-  (is (= {"inspector.test.stream-test/nested-fail"   2
-          "inspector.test.stream-test/simple-fail"   2
-          "inspector.test.stream-test/simplest-fail" 2}
+  (is (= {"inspector.test.stream-test/nested-fail"   1
+          "inspector.test.stream-test/simple-fail"   1
+          "inspector.test.stream-test/simplest-fail" 1}
          (-> (map :fn-name @STREAMED-DATA)
              frequencies)))
 
@@ -81,11 +81,11 @@
   (future (nested 2))
   (Thread/sleep 2000)
 
-  (is (= 12 (count @STREAMED-DATA)))
+  (is (= 6 (count @STREAMED-DATA)))
 
   (let [freq (-> (map :id @STREAMED-DATA)
                  frequencies)]
-    (is (= [2 2 2 2 2 2] (vals freq)))))
+    (is (= [1 1 1 1 1 1] (vals freq)))))
 
 ; TODO: expand on this test
 (deftest stream-from-multiple-independent-threads-exceptions-test
@@ -93,7 +93,7 @@
   (future (nested-fail 1))
   (future (nested-fail 2))
   (Thread/sleep 2000)
-  (is (= 12 (count @STREAMED-DATA))))
+  (is (= 6 (count @STREAMED-DATA))))
 
 (comment
   (-> (get (ns-interns *ns*) 'skip-fixture-test)
