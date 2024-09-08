@@ -49,7 +49,7 @@ L-- [0 1]
 ")
 
 (deftest print-captured-data-test
-  (let [my-project-vars [#'simplest #'simple #'parallel]
+  (let [my-project-vars #{#'simplest #'simple #'parallel}
         output (with-out-str (i/iprint my-project-vars #(parallel 1)))]
     (is (or
           (= (rest (str/split-lines parallel-call-hierarchy-output-1))

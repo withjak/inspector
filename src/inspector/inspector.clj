@@ -3,24 +3,41 @@
             [clojure.string :refer [join]]
             [inspector.utils :as utils]
             [inspector.fn-find :as fn-find]
-            [inspector.capture :as capture]
-            [inspector.stream :as stream]
-            [inspector.tree :as tree])
+            [inspector.middleware.capture :as capture]
+            [inspector.middleware.stream :as stream]
+            [inspector.track :as track])
   (:import java.util.Date))
 
-(defn infer-execution-order
-  [records]
-  (let [; {1 [2 3], 2 [4], 3 [5]}
-        adjacency-list (-> (group-by :c-id records)
-                           (update-vals #(map :id %)))
-        ; 1
-        root-id (first (get adjacency-list nil))
-        ; [[id status level] ...]
-        execution-order (tree/flatten-tree adjacency-list root-id)
-        record-map (->> (map #(vector (:id %) %) records)
-                        (into {}))]
-    [execution-order record-map]))
+(defn get-vars
+  "Returns all function vars available in namespaces,
+   whose string representation matches `regex`."
+  [regex]
+  (fn-find/get-vars regex))
 
+(def inspector-fn-vars
+  (reduce union
+          (map fn-find/get-vars
+               [#"inspector.core"
+                #"inspector.fn-find"
+                #"inspector.tree"
+                #"inspector.utils"
+                #"inspector.capture"
+                #"inspector.stream"
+                #"inspector.inspector"
+                #"inspector.test.*"])))
+
+(defn remove-inspector-fn-vars
+  [vars]
+  (difference vars inspector-fn-vars))
+
+;; Omnipresent mode --------------------------------------------------------------
+(defn stream-raw
+  [vars export-fn]
+  (track/track
+    [(partial stream/stream-middleware export-fn)]
+    (remove-inspector-fn-vars vars)))
+
+;; ------------------- --------------------------------------------------------------
 (defn parse-opts
   [{:keys [only-start?] :as opts}]
   (let [default {:start       [:fn-args]
@@ -36,6 +53,19 @@
     (if only-start?
       (merge only-start-opts opts)
       (merge default opts))))
+
+(defn infer-execution-order
+  [records]
+  (let [; {1 [2 3], 2 [4], 3 [5]}
+        adjacency-list (-> (group-by :c-id records)
+                           (update-vals #(map :id %)))
+        ; 1
+        root-id (first (get adjacency-list nil))
+        ; [[id status level] ...]
+        execution-order (utils/flatten-tree adjacency-list root-id)
+        record-map (->> (map #(vector (:id %) %) records)
+                        (into {}))]
+    [execution-order record-map]))
 
 (defn print-call-hierarchy
   [printer opts records]
@@ -61,55 +91,48 @@
   [file & args]
   (spit file (str (join " " args) "\n") :append true))
 
-(def inspector-fn-vars
-  (reduce union
-          (map fn-find/get-vars
-               [#"inspector.core"
-                #"inspector.fn-find"
-                #"inspector.tree"
-                #"inspector.utils"
-                #"inspector.capture"
-                #"inspector.stream"
-                #"inspector.inspector"
-                #"inspector.test.*"])))
-
-(defn remove-inspector-fn-vars
-  [vars]
-  (difference vars inspector-fn-vars))
-
-(defn get-vars
-  "Returns all function vars available in namespaces,
-   whose string representation matches `regex`."
-  [regex]
-  (fn-find/get-vars regex))
-
-;; Repl debug mode fns --------------------------------------------------------------
+;; Normal mode --------------------------------------------------------------
 (defn iprint
   [vars f & [opts]]
-  (let [{:keys [rv records]} (capture/run (remove-inspector-fn-vars vars) f)]
-    (print-call-hierarchy println opts records)
-    rv))
+  (let [{:keys [rv e records]} (track/with-track
+                                 [{:name       :capture
+                                   :middleware capture/capture-middleware
+                                   :store      capture/accumulator}]
+                                 (remove-inspector-fn-vars vars)
+                                 f)]
+    (print-call-hierarchy println opts (:capture records))
+    (if e
+      (throw e)
+      rv)))
 
 (defn ispit
   [file vars f & [opts]]
-  (let [{:keys [rv records]} (capture/run (remove-inspector-fn-vars vars) f)]
-    (print-call-hierarchy (partial print-to-file file) opts records)
-    rv))
+  (let [{:keys [rv e records]} (track/with-track
+                                 [{:name       :capture
+                                   :middleware capture/capture-middleware
+                                   :store      capture/accumulator}]
+                                 (remove-inspector-fn-vars vars)
+                                 f)]
+    (print-call-hierarchy (partial print-to-file file) opts (:capture records))
+    (if e
+      (throw e)
+      rv)))
 
 ; export
 (defn export-raw
   [vars f]
-  (capture/run (remove-inspector-fn-vars vars) f))
+  (track/with-track
+    [{:name       :capture
+      :middleware capture/capture-middleware
+      :store      capture/accumulator}]
+    (remove-inspector-fn-vars vars)
+    f))
 
-(defn export
-  "WIP
-  Same as `export-raw` with stringify non primitive types present in.
-  In progress not complete yet"
-  [vars f]
-  (let [{:keys [rv records]} (capture/run (remove-inspector-fn-vars vars) f)]
-    {:rv rv :records (utils/stringify-non-primitives records)}))
+#_(defn export
+    "WIP
+    Same as `export-raw` with stringify non primitive types present in.
+    In progress not complete yet"
+    [vars f]
+    (let [{:keys [rv records]} (capture/run (remove-inspector-fn-vars vars) f)]
+      {:rv rv :records (utils/stringify-non-primitives records)}))
 
-;; Omnipresent debug mode fns --------------------------------------------------------------
-(defn stream-raw
-  [vars f]
-  (stream/start-streaming (remove-inspector-fn-vars vars) f))
