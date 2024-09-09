@@ -39,6 +39,7 @@ org.clojars.akshay/inspector {:mvn/version "1.1.2"}
 - **Multiple Modes**:
   - **Normal Mode**: Get human-readable output for specific function calls. (`iprint`, `ispit`)
   - **Omnipresent Mode**: Continuously capture function calls across all threads. (`stream-raw`)
+- **Middleware**: Inject custom code before and after tracked functions executions.
 - **Detailed Insights for Each Function Call**:
   - `:fn-name`: Namespace-qualified function name.
   - `:time`:    Execution time (in nanoseconds).
