@@ -1,45 +1,14 @@
 (ns inspector.utils
   (:require [clojure.walk :as walk]))
 
-(def ^:const reset-color "\u001B[0m")
-
-(def ^:const font-colors
-  {:BLACK  "\u001B[30m"
-   :RED    "\u001B[31m"
-   :GREEN  "\u001B[32m"
-   :YELLOW "\u001B[33m"
-   :BLUE   "\u001B[34m"
-   :PURPLE "\u001B[35m"
-   :CYAN   "\u001B[36m"
-   :WHITE  "\u001B[37m"})
-
-(def ^:const bg-colors
-  {;:BLACK  "\u001B[40m"
-   :RED    "\u001B[41m"
-   :GREEN  "\u001B[42m"
-   :YELLOW "\u001B[43m"
-   :BLUE   "\u001B[44m"
-   :PURPLE "\u001B[45m"
-   :CYAN   "\u001B[46m"
-   ;:WHITE  "\u001B[47m"
-   })
-
-(defn color-font
-  [string color]
-  (str (get font-colors color) string reset-color))
-
-(defn color-bg
-  [string color]
-  (str (get bg-colors color) string reset-color))
-
 (defn full-name
-  [meta-data]
-  (str (:ns meta-data) "/" (:name meta-data)))
+  [fn-meta]
+  (str (:ns fn-meta) "/" (:name fn-meta)))
 
 (defn prepare-fn-record
-  [meta-data fn-args {:keys [c-tid tid c-id c-chain id uuid time e fn-rv] :as shared}]
+  [{:keys [c-tid tid c-id c-chain id uuid time e fn-rv fn-meta fn-args]}]
   (merge
-    {:fn-name (full-name meta-data)
+    {:fn-name (full-name fn-meta)
      :fn-args fn-args
      :id      id
      :tid     tid
@@ -76,3 +45,47 @@
 (comment
   ; to get the datatype map
   (walk-n-replace (fn [form] (vector form (type form))) data))
+
+(defn flatten-tree
+  "Returns a depth-first traversal of the tree. Where :start and :end represents
+  the start or end of a node's exploration.
+
+  adjacency-list: map => { parent-node  [child child ...], ... }.
+  node: this node will be explored using depth first search.
+
+  (flatten-tree
+      {1 [2 3]
+       2 [4]
+       3 [5]}
+      1)
+
+  => [[1 :start 0]
+      [2 :start 1]
+      [4 :start 2]
+      [4 :end 2]
+      [2 :end 1]
+      [3 :start 1]
+      [5 :start 2]
+      [5 :end 2]
+      [3 :end 1]
+      [1 :end 0]]
+
+  [node start/end depth]
+  node: unique index of each node.
+  start/end:
+    [[node1 :start] ... [node1 :end]]
+    everything in between are children of node1
+  level: level of node in the tree
+  "
+  [adjacency-list node]
+  (letfn [(flatten-tree
+            [node level]
+            (let [children (get adjacency-list node)]
+              (concat
+                [node :start level]
+                (mapcat #(flatten-tree % (inc level)) children)
+                [node :end level])))]
+    (partition 3 (flatten-tree node 0))))
+
+
+

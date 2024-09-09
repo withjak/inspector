@@ -2,7 +2,7 @@
 
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.akshay/inspector.svg?include_prereleases)](https://clojars.org/org.clojars.akshay/inspector)
 
-**Inspector** is a tool for profiling, debugging, and visualizing function call hierarchies in Clojure applications. It provides insights into who is calling whom, with what arguments, what was returned, execution time, and more.
+**Inspector** is a tool for profiling, debugging, tracing, and visualizing function call hierarchies in Clojure applications. It provides insights into who is calling whom, with what arguments, what was returned, execution time, and more.
 
 # Table of Contents
 - [Add dependency](#Add-dependency)
@@ -18,19 +18,18 @@
   - [Omnipresent Mode: REPL](#Omnipresent-Mode-REPL)
 - [Tracking Specific Functions or Namespaces](#Tracking-Specific-Functions-or-Namespaces)
 - [Skipping Function Tracking](#Skipping-Function-Tracking)
-- [Customization and Extensibility](#Customization-and-Extensibility)
-- [How Inspector Works](#How-Inspector-Works)
+- [Middleware](#Middleware)
 
 ## Add dependency
 Add the following dependency to your project:
 ### Leiningen
 ```clojure
-[org.clojars.akshay/inspector "1.1.1"]
+[org.clojars.akshay/inspector "1.1.2"]
 ```
 
 ### Clojure CLI/deps.edn
 ```clojure
-org.clojars.akshay/inspector {:mvn/version "1.1.1"}
+org.clojars.akshay/inspector {:mvn/version "1.1.2"}
 ```
 
 ## Features
@@ -40,6 +39,7 @@ org.clojars.akshay/inspector {:mvn/version "1.1.1"}
 - **Multiple Modes**:
   - **Normal Mode**: Get human-readable output for specific function calls. (`iprint`, `ispit`)
   - **Omnipresent Mode**: Continuously capture function calls across all threads. (`stream-raw`)
+- **Middleware**: Inject custom code before and after tracked functions executions.
 - **Detailed Insights for Each Function Call**:
   - `:fn-name`: Namespace-qualified function name.
   - `:time`:    Execution time (in nanoseconds).
@@ -67,7 +67,7 @@ Next, define the functions you want to track using get-vars:
 ```
 
 ### Normal mode
-To capture function calls in a readable format, use:
+To print function calls in a readable format, use:
 ```clojure
 (i/iprint tracked-vars #(my-fn arg1 arg2 argn))
 ```
@@ -161,7 +161,7 @@ Example output from `inspector.test.capture-test`:
 ### Omnipresent Mode: REPL
 If you're tracking function calls in a remote environment via REPL by using `stream-raw`, make sure to restore the original function definitions once done:
 ```clojure
-(inspector.core/restore-original-value tracked-vars)
+(inspector.track/un-track tracked-vars)
 ```
 
 ## Tracking Specific Functions or Namespaces
@@ -191,23 +191,20 @@ To skip tracking a specific function, you can either remove its var from tracked
   ...)
 ```
 
-## Customization and Extensibility
-Inspector allows you to run custom code before and after execution of every tracked function. <br>
-TODO: add more details here.
+## Middleware
+You can use middleware to run custom code before and after the execution of every tracked function.
 
-## How Inspector Works
-In clojure a function's name is a `symbol`.
-The `symbol` maps to a `var` which has a reference to `value`.
-Think of `value` as the actual function which will run when you do `(function-name arg1 arg2)`.
-<img src="./resources/original_function.png" width="500">
-<br>
-<br>
-The idea is to change the reference present in `var` to point to a `new value` (or new function).
-This `new value` (or new function) will wrap the original `value` (or function) with additional code.
-<img src="./resources/modified_function.png" width="500">
-<br>
-<br>
-Inspector provides a structured way to modify a lot of `values`(functions) at once in this way.
+```clojure 
+(defn nano->ms-middleware
+  "Converts execution time from nanoseconds to milliseconds."
+  [handler]
+  (fn [{:keys [fn-args fn-meta fn-rv e time id tid c-id c-tid c-chain uuid] :as state}]
+    (let [new-state (handler state)]
+      (update new-state :time nano->ms))))
+```
+To wrap tracked functions with your custom middleware, check out:
+- `stream-raw` : for omnipresent mode.
+- `export-raw` : for normal mode.
 
 ## License
 
