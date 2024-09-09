@@ -4,7 +4,7 @@
             [inspector.utils :as utils]
             [inspector.fn-find :as fn-find]
             [inspector.middleware.capture :as capture]
-            [inspector.middleware.stream :as stream]
+            [inspector.middleware.export :as export]
             [inspector.track :as track])
   (:import java.util.Date))
 
@@ -34,7 +34,7 @@
 (defn stream-raw
   [vars export-fn]
   (track/track
-    [(partial stream/stream-middleware export-fn)]
+    [(partial export/export-middleware export-fn)]
     (remove-inspector-fn-vars vars)))
 
 ;; ------------------- --------------------------------------------------------------
@@ -92,14 +92,18 @@
   (spit file (str (join " " args) "\n") :append true))
 
 ;; Normal mode --------------------------------------------------------------
+(defn export-raw
+  [vars f]
+  (track/with-track
+    [{:name       :capture
+      :middleware (partial capture/capture-middleware capture/store)
+      :store      capture/store}]
+    (remove-inspector-fn-vars vars)
+    f))
+
 (defn iprint
   [vars f & [opts]]
-  (let [{:keys [rv e records]} (track/with-track
-                                 [{:name       :capture
-                                   :middleware capture/capture-middleware
-                                   :store      capture/accumulator}]
-                                 (remove-inspector-fn-vars vars)
-                                 f)]
+  (let [{:keys [rv e records]} (export-raw vars f)]
     (print-call-hierarchy println opts (:capture records))
     (if e
       (throw e)
@@ -107,26 +111,11 @@
 
 (defn ispit
   [file vars f & [opts]]
-  (let [{:keys [rv e records]} (track/with-track
-                                 [{:name       :capture
-                                   :middleware capture/capture-middleware
-                                   :store      capture/accumulator}]
-                                 (remove-inspector-fn-vars vars)
-                                 f)]
+  (let [{:keys [rv e records]} (export-raw vars f)]
     (print-call-hierarchy (partial print-to-file file) opts (:capture records))
     (if e
       (throw e)
       rv)))
-
-; export
-(defn export-raw
-  [vars f]
-  (track/with-track
-    [{:name       :capture
-      :middleware capture/capture-middleware
-      :store      capture/accumulator}]
-    (remove-inspector-fn-vars vars)
-    f))
 
 #_(defn export
     "WIP

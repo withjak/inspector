@@ -1,7 +1,7 @@
-(ns inspector.middleware.stream
+(ns inspector.middleware.export
   (:require [inspector.utils :as utils]))
 
-(defn stream-middleware
+(defn export-middleware
   [export-fn handler]
   (fn [state]
     (let [new-state (handler state)

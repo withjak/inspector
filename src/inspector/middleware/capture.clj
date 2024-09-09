@@ -1,12 +1,12 @@
 (ns inspector.middleware.capture
   (:require [inspector.utils :as utils]))
 
-(def accumulator (atom []))
+(def store (atom []))
 
 (defn capture-middleware
-  [handler]
+  [store handler]
   (fn [state]
     (let [new-state (handler state)
           record (utils/prepare-fn-record new-state)]
-      (swap! accumulator conj record)
+      (swap! store conj record)
       new-state)))

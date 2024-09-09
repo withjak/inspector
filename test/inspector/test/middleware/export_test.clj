@@ -1,13 +1,13 @@
-(ns inspector.test.middleware.stream-test
+(ns inspector.test.middleware.export-test
   (:require [clojure.test :refer :all]
-            [inspector.middleware.stream :as stream]))
+            [inspector.middleware.export :as export]))
 
-(deftest stream-middleware-test
+(deftest export-middleware-test
   (let [store (atom [])
         capture (fn [record]
                   (swap! store conj record))
-        new-handler (stream/stream-middleware capture identity)
-        state {:meta-data {:name "foo" :ns "dummy"}
+        new-handler (export/export-middleware capture identity)
+        state {:fn-meta {:name "foo" :ns "dummy"}
                :fn-args   '(1 2)
                :id        29
                :tid       10
@@ -22,6 +22,6 @@
     (is (= state result))
     (is (= (-> state
                (assoc :fn-name "dummy/foo")
-               (dissoc :meta-data)
+               (dissoc :fn-meta)
                vector)
            @store))))

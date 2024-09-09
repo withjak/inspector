@@ -39,60 +39,63 @@
         new-state (assoc state :time time :fn-rv rv :e e)]
     new-state))
 
+(defn get-handler
+  [middlewares]
+  ((apply comp middlewares) handler))
+
 (defn get-modified-fn
   "Return new value which replaces the original value pointed to by function's var"
-  ([middlewares fn-var]
-   (get-modified-fn middlewares (deref fn-var) (meta fn-var)))
-  ([middlewares fn-value meta-data]
+  ([handler fn-var]
+   (get-modified-fn handler (deref fn-var) (meta fn-var)))
+  ([handler fn-value fn-meta]
    ; fn-value is the original function value
-   (let [handler ((apply comp middlewares) handler)]
-     (fn modified-value
-       [& args]
-       (if (or @modify *modify*)
-         (let [{:keys [id tid uuid c-chain] :as shared-state} {:c-chain   (or (:c-chain *state*) [])
-                                                               :c-tid     (:c-tid *state*) ; c-id is sufficient to deduce c-tid, keeping it anyway.
-                                                               :c-id      (:c-id *state*)
-                                                               :uuid      (or (:uuid *state*) (random-uuid))
-                                                               :tid       (get-thread-id)
-                                                               :id        (swap! id inc)
+   (fn modified-value
+     [& args]
+     (if (or @modify *modify*)
+       (let [{:keys [id tid uuid c-chain] :as shared-state} {:c-chain  (or (:c-chain *state*) [])
+                                                             :c-tid    (:c-tid *state*) ; c-id is sufficient to deduce c-tid, keeping it anyway.
+                                                             :c-id     (:c-id *state*)
+                                                             :uuid     (or (:uuid *state*) (random-uuid))
+                                                             :tid      (get-thread-id)
+                                                             :id       (swap! id inc)
 
-                                                               :fn-args   args
-                                                               :fn-value  fn-value
-                                                               :meta-data meta-data}]
-           ;; for fns that "f" calls, f's id will be their c-id
-           (binding [*state* {:c-id id :c-tid tid :uuid uuid :c-chain (conj c-chain id)}]
-             (let [{:keys [fn-rv e]} (handler shared-state)]
-               (if e
-                 (throw e)
-                 fn-rv))))
-         (apply fn-value args))))))
+                                                             :fn-args  args
+                                                             :fn-value fn-value
+                                                             :fn-meta  fn-meta}]
+         ;; for fns that "f" calls, f's id will be their c-id
+         (binding [*state* {:c-id id :c-tid tid :uuid uuid :c-chain (conj c-chain id)}]
+           (let [{:keys [fn-rv e]} (handler shared-state)]
+             (if e
+               (throw e)
+               fn-rv))))
+       (apply fn-value args)))))
 
 (defn with-modify-fns
   "In context of current thread (and any children it spawns),
   modify `fn-vars` and then call `f` in this modified environment."
   [fn-vars f middlewares]
-  (binding [*modify* true]
-    (with-redefs-fn
-      ;; modify all given functions
-      (zipmap fn-vars (map (partial get-modified-fn middlewares) fn-vars))
-      ;; run fn f in this modified environment
-      f)))
+  (let [handler (get-handler middlewares)]
+    (binding [*modify* true]
+      (with-redefs-fn
+        (zipmap fn-vars
+                (map (partial get-modified-fn handler) fn-vars)) ;; modify all given functions
+        f))))
 
 (defn alter-fns
   "Alter root binding of `fn-vars` to point to new value which is a wrapper over the original value"
   [fn-vars middlewares]
-  (doseq [fn-var fn-vars]
-    (when-not (or (:i-skip (meta fn-var))
-                  (:i-original-value (meta fn-var)))
-      ; attach the original value in meta, so it could be recovered if needed
-      (alter-meta! fn-var assoc :i-original-value (deref fn-var))
-      (alter-var-root fn-var (fn [fn-value] (get-modified-fn middlewares fn-value (meta fn-var)))))))
+  (let [handler (get-handler middlewares)]
+    (doseq [fn-var fn-vars]
+      (when-not (or (:i-skip (meta fn-var))
+                    (:i-original (meta fn-var)))
+        (alter-meta! fn-var assoc :i-original (deref fn-var)) ; for restoring vars if needed
+        (alter-var-root fn-var (fn [fn-value] (get-modified-fn handler fn-value (meta fn-var))))))))
 
 (defn restore-altered-fns
   [fn-vars]
   (doseq [fn-var fn-vars]
-    (when-let [original-value (:i-original-value (meta fn-var))]
-      (alter-meta! fn-var dissoc :i-original-value)
+    (when-let [original-value (:i-original (meta fn-var))]
+      (alter-meta! fn-var dissoc :i-original)
       (alter-var-root fn-var (fn [_] original-value)))))
 
 (comment

@@ -28,24 +28,21 @@
                                   Throwable->map
                                   :cause))))))
 
-(defn middleware
-  [store handler]
-  (fn [state]
-    (let [new-state (handler state)]
-      (swap! store conj new-state)
-      new-state)))
+(defn handler [store state]
+  (let [new-state (core/handler state)]
+    (swap! store conj new-state)
+    new-state))
 
 (deftest get-modified-fn-test-no-modification
+  ; handler should not be invoked, i.e. store should remain empty.
   (let [store (atom [])
-        middlewares [(partial middleware store)]
-        new-fn (core/get-modified-fn middlewares #'foo)]
+        new-fn (core/get-modified-fn (partial handler store) #'foo)]
 
     (is (= [1 2] (new-fn [1 2])))
     (is (= [] @store)))
 
   (let [store (atom [])
-        middlewares [(partial middleware store)]
-        new-fn (core/get-modified-fn middlewares #'foo-error)]
+        new-fn (core/get-modified-fn (partial handler store) #'foo-error)]
 
     ; not sure why but clojure.test thrown? is not being resolved
     (is (= "Divide by zero" (try (new-fn 1)
@@ -55,14 +52,13 @@
 
 (defn all-keys-present
   [record]
-  (= #{:meta-data :fn-args :fn-rv :e :id :tid :c-id :c-tid :c-chain :time :uuid}
+  (= #{:fn-meta :fn-args :fn-rv :e :id :tid :c-id :c-tid :c-chain :time :uuid}
      (-> record keys set (disj :fn-value))))
 
 (deftest get-modified-fn-test-set-*modify*
   (testing "fn ran and return return value"
     (let [store (atom [])
-          middlewares [(partial middleware store)]
-          new-fn (core/get-modified-fn middlewares #'foo)]
+          new-fn (core/get-modified-fn (partial handler store) #'foo)]
 
       (is (= [1 2] (binding [core/*modify* true]
                      (new-fn [1 2]))))
@@ -71,8 +67,7 @@
 
   (testing "fn rain and failed. Data was captured successfully and exception was thrown"
     (let [store (atom [])
-          middlewares [(partial middleware store)]
-          new-fn (core/get-modified-fn middlewares #'foo-error)]
+          new-fn (core/get-modified-fn (partial handler store) #'foo-error)]
 
       (is (= "Divide by zero" (try (binding [core/*modify* true]
                                      (new-fn 1))
@@ -83,8 +78,7 @@
 
 (deftest get-modified-fn-test-set-modify
   (let [store (atom [])
-        middlewares [(partial middleware store)]
-        new-fn (core/get-modified-fn middlewares #'foo)]
+        new-fn (core/get-modified-fn (partial handler store) #'foo)]
     (reset! core/modify true)
 
     (is (= [1 2] (new-fn [1 2])))
@@ -94,12 +88,21 @@
     ; keep it
     (reset! core/modify false)))
 
+(defn middleware
+  [store handler]
+  (fn [state]
+    (let [new-state (handler state)]
+      (swap! store conj new-state)
+      new-state)))
+
 (deftest middlewares-test
   (testing "2 different middlewares"
     (let [store-1 (atom [])
           store-2 (atom [])
-          new-fn (core/get-modified-fn [(partial middleware store-1)
-                                        (partial middleware store-2)] #'foo)]
+          m1 (partial middleware store-1)
+          m2 (partial middleware store-2)
+          handler ((comp m1 m2) core/handler)
+          new-fn (core/get-modified-fn handler #'foo)]
       (is (= [1 2] (binding [core/*modify* true]
                      (new-fn [1 2]))))
       (is (= 1 (count @store-1)))
@@ -113,7 +116,7 @@
 
 (defn get-fs-data
   [store sym]
-  (first (filter #(= sym (get-in % [:meta-data :name])) store)))
+  (first (filter #(= sym (get-in % [:fn-meta :name])) store)))
 
 (deftest with-modify-fns-test
   (let [store (atom [])
@@ -157,11 +160,11 @@
   (let [tracked-var #'foo
         original-value @#'foo]
     (core/alter-fns #{tracked-var} [])
-    (is (contains? (meta #'foo) :i-original-value))
+    (is (contains? (meta #'foo) :i-original))
     (is (not= original-value @#'foo))
 
     (core/restore-altered-fns #{tracked-var})
-    (is (false? (contains? (meta #'foo) :i-original-value)))
+    (is (false? (contains? (meta #'foo) :i-original)))
     (is (= original-value @#'foo))))
 
 (deftest alter-fns-test

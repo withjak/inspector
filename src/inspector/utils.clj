@@ -2,13 +2,13 @@
   (:require [clojure.walk :as walk]))
 
 (defn full-name
-  [meta-data]
-  (str (:ns meta-data) "/" (:name meta-data)))
+  [fn-meta]
+  (str (:ns fn-meta) "/" (:name fn-meta)))
 
 (defn prepare-fn-record
-  [{:keys [c-tid tid c-id c-chain id uuid time e fn-rv meta-data fn-args]}]
+  [{:keys [c-tid tid c-id c-chain id uuid time e fn-rv fn-meta fn-args]}]
   (merge
-    {:fn-name (full-name meta-data)
+    {:fn-name (full-name fn-meta)
      :fn-args fn-args
      :id      id
      :tid     tid
