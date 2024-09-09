@@ -9,21 +9,18 @@
   [store handler]
   (fn [state]
     (let [new-state (handler state)]
-      (swap! store conj new-state)
+      (swap! store conj (assoc new-state :m-name :test-middleware))
       new-state)))
 
 (deftest with-track-test
   (let [store (atom [])
-        middlewares [{:name       :m
-                      :middleware (partial middleware store)
-                      :store store}]
+        middlewares [(partial middleware store)]
         tracked-vars #{#'foo #'boo}
         {:keys [rv e records]} (track/with-track
-                                 middlewares
+                                 middlewares store
                                  tracked-vars
                                  #(boo 2))]
     (is (= 3 rv))
     (is (= nil e))
-    (is (contains? records :m))
-    (is (= 2 (count (:m records))))
-    (is (= [] @store))))
+    (is (= [:test-middleware :test-middleware] (map :m-name records)))
+    (is (= 2 (count records)))))

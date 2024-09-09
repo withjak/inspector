@@ -3,21 +3,16 @@
 
 ; normal mode
 (defn with-track
-  [middlewares vars f]
-  #_{:pre [(every? keyword? (map :name middlewares))
-           (every? #(= clojure.lang.Atom (type %)) (map :store middlewares))
-           (every? fn? (map :middleware middlewares))]}
-
-  (let [m (map :middleware middlewares)
-        {:keys [rv e]} (try {:rv (core/with-modify-fns vars f m)}
-                            (catch Exception e
-                              {:e e}))
-        records (->> (filter :store middlewares)
-                     (map #(vector (:name %) @(:store %)))
-                     (into {}))]
-    (doseq [store (map :store middlewares)]
-      (reset! store []))
-    {:rv rv :e e :records records}))
+  "Arguments:
+  `store`: A place to save data for normal mode middlewares.
+           As we would generally want to so some processing on the data after execution of function f.
+  `middlewares`: vector of middlewares, which may or may not save data in `store`."
+  [middlewares store vars f]
+  (let [{:keys [rv e]} (try
+                         {:rv (core/with-modify-fns vars f middlewares)}
+                         (catch Exception e
+                           {:e e}))]
+    {:rv rv :e e :records @store}))
 
 ; omnipresent mode
 (defn track
@@ -29,3 +24,5 @@
   [vars]
   (reset! core/modify false)
   (core/restore-altered-fns vars))
+
+

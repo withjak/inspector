@@ -94,17 +94,17 @@
 ;; Normal mode --------------------------------------------------------------
 (defn export-raw
   [vars f]
-  (track/with-track
-    [{:name       :capture
-      :middleware (partial capture/capture-middleware capture/store)
-      :store      capture/store}]
-    (remove-inspector-fn-vars vars)
-    f))
+  (let [store (atom [])
+        middlewares [(partial capture/capture-middleware store)]]
+    (track/with-track
+      middlewares store
+      (remove-inspector-fn-vars vars)
+      f)))
 
 (defn iprint
   [vars f & [opts]]
   (let [{:keys [rv e records]} (export-raw vars f)]
-    (print-call-hierarchy println opts (:capture records))
+    (print-call-hierarchy println opts records)
     (if e
       (throw e)
       rv)))
@@ -112,7 +112,7 @@
 (defn ispit
   [file vars f & [opts]]
   (let [{:keys [rv e records]} (export-raw vars f)]
-    (print-call-hierarchy (partial print-to-file file) opts (:capture records))
+    (print-call-hierarchy (partial print-to-file file) opts records)
     (if e
       (throw e)
       rv)))

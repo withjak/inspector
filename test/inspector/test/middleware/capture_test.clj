@@ -20,6 +20,7 @@
     (is (= state result))
     (is (= (-> state
                (assoc :fn-name "dummy/foo")
+               (assoc :m-name :capture-middleware)
                (dissoc :fn-meta)
                vector)
            @store))))
