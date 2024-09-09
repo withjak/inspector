@@ -39,18 +39,18 @@
 
 ;; ------------------- --------------------------------------------------------------
 (defn parse-opts
-  [{:keys [only-start?] :as opts}]
+  [{:keys [start-only?] :as opts}]
   (let [default {:start       [:fn-args]
-                 :only-start? false
+                 :start-only? false
                  :end         [:fn-rv]
                  :indent      "|  "
                  :marker      {:start "Г--"
                                :end   "L--"}}
         only-start-opts {:start       [:fn-args :fn-rv]
-                         :only-start? true
+                         :start-only? true
                          :indent      "   "
                          :marker      {:start "-->"}}]
-    (if only-start?
+    (if start-only?
       (merge only-start-opts opts)
       (merge default opts))))
 
