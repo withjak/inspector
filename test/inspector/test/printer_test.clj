@@ -1,6 +1,6 @@
-(ns inspector.test.utils-test
+(ns inspector.test.printer-test
   (:require [clojure.test :refer :all]
-            [inspector.utils :as utils]))
+            [inspector.printer :as printer]))
 
 (deftest flatten-tree-test
   (is (= [[1 :start 0]
@@ -13,7 +13,7 @@
           [5 :end 2]
           [3 :end 1]
           [1 :end 0]]
-         (utils/flatten-tree
+         (printer/flatten-tree
            {1 [2 3]
             2 [4]
             3 [5]}

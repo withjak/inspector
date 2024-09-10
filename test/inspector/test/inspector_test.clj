@@ -58,7 +58,7 @@ L-- [0 1]
              (rest (str/split-lines output)))))))
 
 (deftest spit-captured-data-test
-  (let [my-project-vars [#'simplest #'simple #'parallel]
+  (let [my-project-vars #{#'simplest #'simple #'parallel}
         rv (i/ispit file my-project-vars #(parallel 1))
         output (slurp file)]
     (is (or

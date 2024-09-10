@@ -24,12 +24,12 @@
 Add the following dependency to your project:
 ### Leiningen
 ```clojure
-[org.clojars.akshay/inspector "1.1.2"]
+[org.clojars.akshay/inspector "1.1.3-SNAPSHOT"]
 ```
 
 ### Clojure CLI/deps.edn
 ```clojure
-org.clojars.akshay/inspector {:mvn/version "1.1.2"}
+org.clojars.akshay/inspector {:mvn/version "1.1.3-SNAPSHOT"}
 ```
 
 ## Features
@@ -128,7 +128,7 @@ L-- fn-rv
 
 Another example
 ```clojure 
-(i/iprint tracked-vars #(my-fn arg1 arg2) {:start-only? true 
+(i/iprint tracked-vars #(my-fn arg1 arg2) {:expanded-view? false 
                                            :start [:time :fn-rv]})
 ```
 Output:
