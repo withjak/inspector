@@ -93,7 +93,7 @@ L-- [0 1] <-- return value
 ### Omnipresent mode
 To capture data continuously:
 ```clojure
-(defn export 
+(defn ^:i-skip export 
   [{:keys [:fn-name :fn-args :fn-rv :e :time :id :tid :c-id :c-tid :c-chain :uuid]} :as record]
   ;; Handle the captured data (e.g., log it, send to a database, etc.)
   (clojure.tools.logging/info (dissoc record :fn-args :fn-rv)))

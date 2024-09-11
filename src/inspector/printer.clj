@@ -73,7 +73,7 @@
   [depth indent marker exploration]
   (str (str/join (repeat depth indent)) (exploration marker)))
 
-(defn format
+(defn skip-escape-sequences
   [record k]
   (if (or (= k :fn-args) (= k :fn-rv))
     (with-out-str
@@ -84,7 +84,7 @@
   "`fn-args` and `fn-rv` might contain strings with escape sequences such as \n.
   They need to be properly escaped, else the output spans to multiple lines."
   [record opts exploration]
-  (map (partial format record) (exploration opts)))
+  (map (partial skip-escape-sequences record) (exploration opts)))
 
 (defn create-line
   [[_ exploration depth]
