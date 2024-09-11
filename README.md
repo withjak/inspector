@@ -1,5 +1,6 @@
 # inspector
 
+[![Clojars Project](https://img.shields.io/clojars/v/org.clojars.akshay/inspector.svg)](https://clojars.org/org.clojars.akshay/inspector)
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.akshay/inspector.svg?include_prereleases)](https://clojars.org/org.clojars.akshay/inspector)
 
 **Inspector** is a tool for profiling, debugging, tracing, and visualizing function call hierarchies in Clojure applications. It provides insights into who is calling whom, with what arguments, what was returned, execution time, and more.
