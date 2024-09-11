@@ -17,10 +17,10 @@
           (map fn-find/get-vars
                [#"inspector.core"
                 #"inspector.fn-find"
-                #"inspector.tree"
+                #"inspector.middleware.*"
+                #"inspector.track"
                 #"inspector.utils"
-                #"inspector.capture"
-                #"inspector.stream"
+                #"inspector.printer"
                 #"inspector.inspector"
                 #"inspector.test.*"])))
 
