@@ -1,5 +1,6 @@
 # inspector
 
+[![Clojars Project](https://img.shields.io/clojars/v/org.clojars.akshay/inspector.svg)](https://clojars.org/org.clojars.akshay/inspector)
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.akshay/inspector.svg?include_prereleases)](https://clojars.org/org.clojars.akshay/inspector)
 
 **Inspector** is a tool for profiling, debugging, tracing, and visualizing function call hierarchies in Clojure applications. It provides insights into who is calling whom, with what arguments, what was returned, execution time, and more.
@@ -24,12 +25,12 @@
 Add the following dependency to your project:
 ### Leiningen
 ```clojure
-[org.clojars.akshay/inspector "1.1.2"]
+[org.clojars.akshay/inspector "1.1.3-SNAPSHOT"]
 ```
 
 ### Clojure CLI/deps.edn
 ```clojure
-org.clojars.akshay/inspector {:mvn/version "1.1.2"}
+org.clojars.akshay/inspector {:mvn/version "1.1.3-SNAPSHOT"}
 ```
 
 ## Features
@@ -93,7 +94,7 @@ L-- [0 1] <-- return value
 ### Omnipresent mode
 To capture data continuously:
 ```clojure
-(defn export 
+(defn ^:i-skip export 
   [{:keys [:fn-name :fn-args :fn-rv :e :time :id :tid :c-id :c-tid :c-chain :uuid]} :as record]
   ;; Handle the captured data (e.g., log it, send to a database, etc.)
   (clojure.tools.logging/info (dissoc record :fn-args :fn-rv)))
@@ -128,7 +129,7 @@ L-- fn-rv
 
 Another example
 ```clojure 
-(i/iprint tracked-vars #(my-fn arg1 arg2) {:start-only? true 
+(i/iprint tracked-vars #(my-fn arg1 arg2) {:expanded-view? false 
                                            :start [:time :fn-rv]})
 ```
 Output:
