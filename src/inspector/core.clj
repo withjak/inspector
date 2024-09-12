@@ -86,10 +86,15 @@
   [fn-vars middlewares]
   (let [handler (get-handler middlewares)]
     (doseq [fn-var fn-vars]
-      (when-not (or (:i-skip (meta fn-var))
-                    (:i-original (meta fn-var)))
-        (alter-meta! fn-var assoc :i-original (deref fn-var)) ; for restoring vars if needed
-        (alter-var-root fn-var (fn [fn-value] (get-modified-fn handler fn-value (meta fn-var))))))))
+      (let [fn-meta (meta fn-var)]
+        (when-not (or (:i-skip fn-meta)
+                      (:i-original fn-meta))
+          ; for restoring vars if needed
+          (alter-meta! fn-var assoc :i-original (deref fn-var))
+          (alter-var-root
+            fn-var
+            (fn [fn-value]
+              (get-modified-fn handler fn-value fn-meta))))))))
 
 (defn restore-altered-fns
   [fn-vars]

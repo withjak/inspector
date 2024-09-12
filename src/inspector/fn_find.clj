@@ -3,7 +3,8 @@
 (defn matching-ns
   "All namespaces whose string representation matches regex."
   [regex]
-  (filter #(re-matches regex (str %)) (all-ns)))
+  (->> (all-ns)
+       (filter #(re-matches regex (str %)))))
 
 (defn is-var-fn?
   [a-var]
@@ -18,13 +19,12 @@
   [ns]
   (->> (vals (ns-interns ns))
        (filter is-var-fn?)
-       (filter #(not (macro? %)))))
+       (remove macro?)))
 
 (defn get-vars
   "Returns all function vars available in namespaces,
    whose string representation matches `regex`."
   [regex]
-  (set
-    (apply
-      concat
-      (map fn-vars-from-ns (matching-ns regex)))))
+  (->> (matching-ns regex)
+       (mapcat fn-vars-from-ns)
+       set))

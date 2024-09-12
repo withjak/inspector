@@ -45,6 +45,8 @@
 
 (defn parse-opts
   [opts]
+  ; Possible keywords in :start and :end:
+  ; :fn-name :fn-args :fn-rv :e :id :tid :c-id :c-tid :c-chain :time :uuid
   (let [expanded-view? (if (contains? opts :expanded-view?)
                          (:expanded-view? opts)
                          true)

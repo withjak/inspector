@@ -48,6 +48,7 @@
 (defn iprint
   [vars f & [opts]]
   (let [{:keys [rv e records]} (export-raw vars f)]
+    ; pass only those records where :m-name = :capture-middleware
     (printer/print-call-tree println opts records)
     (if e
       (throw e)
@@ -55,11 +56,10 @@
 
 (defn ispit
   [file vars f & [opts]]
-  (let [{:keys [rv e records]} (export-raw vars f)]
-    (printer/print-call-tree
-      (partial printer/print-to-file file)
-      opts
-      records)
+  (let [{:keys [rv e records]} (export-raw vars f)
+        file-printer (partial printer/print-to-file file)]
+    ; pass only those records where :m-name = :capture-middleware
+    (printer/print-call-tree file-printer opts records)
     (if e
       (throw e)
       rv)))

@@ -5,8 +5,9 @@
   [store handler]
   (fn [state]
     (let [new-state (handler state)
-          record (utils/prepare-fn-record new-state)]
+          record (-> (utils/prepare-fn-record new-state)
+                     (assoc :m-name :capture-middleware))]
       ; store is supposed to be shared between all middlewares
       ; so when storing data in store, middleware must always associate its name in the data.
-      (swap! store conj (assoc record :m-name :capture-middleware))
+      (swap! store conj record)
       new-state)))
